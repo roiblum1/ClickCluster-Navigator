@@ -1,0 +1,14 @@
+{
+  "vlan_manager": {
+    "url": "http://0.0.0.0:9000",
+    "sync_interval_seconds": 300
+  },
+  "application": {
+    "host": "0.0.0.0",
+    "port": 8000
+  },
+  "auth": {
+    "admin_username": "admin",
+    "admin_password": "Password1"
+  }
+}

@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "openshift-cluster-navigator.fullname" . }}-config
+  labels:
+    {{- include "openshift-cluster-navigator.labels" . | nindent 4 }}
+data:
+  config.json: |
+    {
+      "vlan_manager": {
+        "url": "{{ .Values.app.vlanManagerUrl }}",
+        "sync_interval_seconds": {{ .Values.app.syncInterval }}
+      },
+      "application": {
+        "host": "0.0.0.0",
+        "port": 8000
+      },
+      "auth": {
+        "admin_username": "admin",
+        "admin_password": "Password1"
+      }
+    }
+{{- with .Values.configMap.data }}
+  {{- toYaml . | nindent 2 }}
+{{- end }}

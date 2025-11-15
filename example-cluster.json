@@ -1,0 +1,9 @@
+{
+  "clusterName": "ocp4-roi",
+  "site": "site1",
+  "segments": [
+    "192.178.1.0/24",
+    "192.178.2.0/24"
+  ],
+  "domainName": "example.com"
+}

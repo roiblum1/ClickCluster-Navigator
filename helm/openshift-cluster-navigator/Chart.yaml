@@ -1,0 +1,17 @@
+apiVersion: v2
+name: openshift-cluster-navigator
+description: A Helm chart for OpenShift Cluster Navigator - Navigate your OpenShift clusters organized by site
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - openshift
+  - cluster
+  - navigator
+  - vlan-manager
+  - red-bull-racing
+home: https://github.com/yourusername/openshift-cluster-navigator
+maintainers:
+  - name: Red Bull Racing Infrastructure Team
+    email: infrastructure@redbullracing.com
+icon: https://www.openshift.com/hubfs/images/logos/osh/Logotype_RH_OpenShift_wLogo_RGB_Gray.svg

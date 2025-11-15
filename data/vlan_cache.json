@@ -1,0 +1,136 @@
+{
+  "last_updated": "2025-11-15T19:48:32.161461",
+  "data": {
+    "clusters": [
+      {
+        "clusterName": "ocp4-test-10",
+        "site": "Site1",
+        "segments": [
+          "192.1.1.0/24"
+        ],
+        "domainName": "example.com",
+        "metadata": {
+          "vlan_ids": [
+            100
+          ],
+          "epg_names": [
+            "EPG_PROD_01"
+          ],
+          "vrfs": []
+        }
+      },
+      {
+        "clusterName": "test-cluster-site1",
+        "site": "Site1",
+        "segments": [
+          "192.1.99.0/24"
+        ],
+        "domainName": "example.com",
+        "metadata": {
+          "vlan_ids": [
+            102
+          ],
+          "epg_names": [
+            "EPG_PROD_03"
+          ],
+          "vrfs": []
+        }
+      },
+      {
+        "clusterName": "ocp4-roi",
+        "site": "Site1",
+        "segments": [
+          "192.1.21.0/24"
+        ],
+        "domainName": "example.com",
+        "metadata": {
+          "vlan_ids": [
+            121
+          ],
+          "epg_names": [
+            "EPG_TEST_02"
+          ],
+          "vrfs": []
+        }
+      },
+      {
+        "clusterName": "ocp4-roi2",
+        "site": "Site1",
+        "segments": [
+          "192.1.21.0/24"
+        ],
+        "domainName": "example.com",
+        "metadata": {
+          "vlan_ids": [
+            121
+          ],
+          "epg_names": [
+            "EPG_TEST_02"
+          ],
+          "vrfs": []
+        }
+      },
+      {
+        "clusterName": "ocp4-test-10",
+        "site": "Site2",
+        "segments": [
+          "193.1.2.0/24"
+        ],
+        "domainName": "example.com",
+        "metadata": {
+          "vlan_ids": [
+            201
+          ],
+          "epg_names": [
+            "EPG_DEV_02"
+          ],
+          "vrfs": []
+        }
+      },
+      {
+        "clusterName": "test-cluster-site2",
+        "site": "Site2",
+        "segments": [
+          "193.1.4.0/24"
+        ],
+        "domainName": "example.com",
+        "metadata": {
+          "vlan_ids": [
+            203
+          ],
+          "epg_names": [
+            "EPG_DEV_04"
+          ],
+          "vrfs": []
+        }
+      },
+      {
+        "clusterName": "test-cluster-site3",
+        "site": "Site3",
+        "segments": [
+          "194.1.1.0/24"
+        ],
+        "domainName": "example.com",
+        "metadata": {
+          "vlan_ids": [
+            300
+          ],
+          "epg_names": [
+            "EPG_DR_01"
+          ],
+          "vrfs": []
+        }
+      }
+    ],
+    "sites": [
+      "Site1",
+      "Site2",
+      "Site3"
+    ],
+    "stats": {
+      "total_clusters": 7,
+      "total_sites": 3,
+      "total_segments": 7
+    }
+  }
+}

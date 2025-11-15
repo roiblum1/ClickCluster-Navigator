@@ -1,0 +1,234 @@
+# Default values for openshift-cluster-navigator
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 2
+
+image:
+  repository: quay.io/your-org/openshift-cluster-navigator
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Application configuration
+app:
+  title: "OpenShift Cluster Navigator"
+  vlanManagerUrl: "http://vlan-manager:9000"
+  syncInterval: 300  # seconds
+
+# Authentication configuration
+auth:
+  # Create a secret with admin credentials
+  # kubectl create secret generic cluster-navigator-auth \
+  #   --from-literal=username=admin \
+  #   --from-literal=password=YourSecurePassword123
+  existingSecret: ""  # Name of existing secret
+  username: "admin"
+  password: "Password1"  # Change this in production!
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+  annotations: {}
+
+# OpenShift Route configuration
+route:
+  enabled: true
+  annotations: {}
+  # Example annotations for certificate management:
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod
+  host: ""  # If empty, OpenShift will auto-generate
+  path: /
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+    # For custom certificates:
+    # certificate: |
+    #   -----BEGIN CERTIFICATE-----
+    #   ...
+    #   -----END CERTIFICATE-----
+    # key: |
+    #   -----BEGIN PRIVATE KEY-----
+    #   ...
+    #   -----END PRIVATE KEY-----
+    # caCertificate: |
+    #   -----BEGIN CERTIFICATE-----
+    #   ...
+    #   -----END CERTIFICATE-----
+
+# Kubernetes Ingress (alternative to Route)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: cluster-navigator.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: cluster-navigator-tls
+  #    hosts:
+  #      - cluster-navigator.example.com
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Persistent storage for cache
+persistence:
+  enabled: true
+  storageClass: ""  # Use default storage class if empty
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  # Use existing PVC
+  existingClaim: ""
+
+# Liveness and readiness probes
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - openshift-cluster-navigator
+        topologyKey: kubernetes.io/hostname
+
+# ConfigMap for additional configuration
+configMap:
+  # Additional config.json overrides
+  data: {}
+  # Example:
+  # data:
+  #   config.json: |
+  #     {
+  #       "vlan_manager": {
+  #         "url": "http://vlan-manager-service:9000",
+  #         "sync_interval_seconds": 300
+  #       }
+  #     }
+
+# Network Policy
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - podSelector: {}
+      ports:
+      - protocol: TCP
+        port: 8000
+  egress:
+    # Allow DNS
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: openshift-dns
+      ports:
+      - protocol: UDP
+        port: 53
+    # Allow VLAN Manager
+    - to:
+      - podSelector:
+          matchLabels:
+            app: vlan-manager
+      ports:
+      - protocol: TCP
+        port: 9000
+    # Allow external HTTPS (for future integrations)
+    - to:
+      - namespaceSelector: {}
+      ports:
+      - protocol: TCP
+        port: 443
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  # maxUnavailable: 1
+
+# Monitoring with ServiceMonitor (Prometheus Operator)
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+    # Example labels for Prometheus Operator
+    # labels:
+    #   prometheus: kube-prometheus
