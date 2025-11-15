@@ -1,0 +1,110 @@
+# Development values for openshift-cluster-navigator
+# Optimized for development and testing environments
+
+replicaCount: 1
+
+image:
+  repository: quay.io/your-org/openshift-cluster-navigator
+  pullPolicy: Always
+  tag: "latest"
+
+# Application configuration
+app:
+  title: "OpenShift Cluster Navigator - Development"
+  vlanManagerUrl: "http://vlan-manager.dev.svc:9000"
+  syncInterval: 60  # More frequent sync for testing
+
+# Authentication - Simple credentials for dev
+auth:
+  username: "admin"
+  password: "DevPassword123"
+  existingSecret: ""
+
+serviceAccount:
+  create: true
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8000
+
+# OpenShift Route - Development
+route:
+  enabled: true
+  annotations: {}
+  host: "clusters.dev.example.com"
+  path: /
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+# Minimal resources for dev
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# No persistence in dev (faster pod restarts)
+persistence:
+  enabled: false
+
+# Quick health checks for faster feedback
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+# No autoscaling in dev
+autoscaling:
+  enabled: false
+
+nodeSelector: {}
+
+tolerations: []
+
+# No special affinity in dev
+affinity: {}
+
+# No network policy in dev for easier debugging
+networkPolicy:
+  enabled: false
+
+# No PDB in dev
+podDisruptionBudget:
+  enabled: false
+
+# No monitoring in dev
+monitoring:
+  enabled: false

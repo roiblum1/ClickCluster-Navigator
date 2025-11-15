@@ -1,0 +1,200 @@
+# Production values for openshift-cluster-navigator
+# This file contains production-ready configuration
+
+replicaCount: 3
+
+image:
+  repository: quay.io/your-org/openshift-cluster-navigator
+  pullPolicy: Always
+  tag: "v1.0.0"  # Use specific version in production
+
+# Application configuration
+app:
+  title: "OpenShift Cluster Navigator - Production"
+  vlanManagerUrl: "http://vlan-manager.vlan-system.svc.cluster.local:9000"
+  syncInterval: 300
+
+# Authentication - USE EXISTING SECRET IN PRODUCTION!
+auth:
+  existingSecret: "cluster-navigator-prod-credentials"
+  # Don't set username/password here, use secret instead
+  # Create secret with:
+  # kubectl create secret generic cluster-navigator-prod-credentials \
+  #   --from-literal=username=admin \
+  #   --from-literal=password="YOUR_SECURE_PASSWORD_HERE"
+
+serviceAccount:
+  create: true
+  annotations:
+    # Add any service account annotations here
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8000
+  annotations: {}
+
+# OpenShift Route - Production Configuration
+route:
+  enabled: true
+  annotations:
+    haproxy.router.openshift.io/timeout: "5m"
+    haproxy.router.openshift.io/rate-limit-connections: "true"
+    haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp: "100"
+  host: "clusters.prod.example.com"  # Set your production hostname
+  path: /
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+# Resource limits - Sized for production workload
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+# Persistent storage for cache
+persistence:
+  enabled: true
+  storageClass: "gp3-csi"  # Use appropriate storage class
+  accessMode: ReadWriteOnce
+  size: 5Gi
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Horizontal Pod Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Node selection
+nodeSelector: {}
+  # Example: Run on specific node pool
+  # node-role.kubernetes.io/worker: ""
+  # workload-type: application
+
+# Tolerations
+tolerations: []
+  # Example: Tolerate specific taints
+  # - key: "dedicated"
+  #   operator: "Equal"
+  #   value: "application"
+  #   effect: "NoSchedule"
+
+# Pod anti-affinity for HA
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - openshift-cluster-navigator
+      topologyKey: kubernetes.io/hostname
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - openshift-cluster-navigator
+      topologyKey: topology.kubernetes.io/zone
+
+# Network Policy - Restrict traffic
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from OpenShift Router
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            network.openshift.io/policy-group: ingress
+      ports:
+      - protocol: TCP
+        port: 8000
+  egress:
+    # Allow DNS
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: openshift-dns
+      ports:
+      - protocol: UDP
+        port: 53
+    # Allow VLAN Manager
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: vlan-system
+      - podSelector:
+          matchLabels:
+            app: vlan-manager
+      ports:
+      - protocol: TCP
+        port: 9000
+    # Allow Kubernetes API
+    - to:
+      - namespaceSelector: {}
+      ports:
+      - protocol: TCP
+        port: 443
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Monitoring with Prometheus
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+    labels:
+      prometheus: kube-prometheus
