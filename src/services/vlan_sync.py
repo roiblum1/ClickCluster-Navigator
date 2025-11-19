@@ -94,7 +94,7 @@ class VLANSyncService:
                         "clusterName": cluster_name,
                         "site": site,
                         "segments": [],
-                        "domainName": "example.com",  # Default domain
+                        "domainName": config.default_domain,  # Use configurable domain
                         "metadata": {
                             "vlan_ids": [],
                             "epg_names": [],

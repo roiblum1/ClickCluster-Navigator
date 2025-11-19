@@ -5,7 +5,8 @@
   },
   "application": {
     "host": "0.0.0.0",
-    "port": 8000
+    "port": 8000,
+    "default_domain": "example.com"
   },
   "auth": {
     "admin_username": "admin",

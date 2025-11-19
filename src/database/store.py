@@ -17,10 +17,11 @@ class ClusterStore:
 
     def create_cluster(self, cluster_data: dict) -> dict:
         """Create a new cluster entry."""
+        from src.config import config
         cluster_id = str(uuid.uuid4())
         cluster_name = cluster_data["clusterName"]
         site = cluster_data["site"]
-        domain_name = cluster_data.get("domainName", "example.com")
+        domain_name = cluster_data.get("domainName", config.default_domain)
 
         # Generate console URL
         console_url = f"https://console-openshift-console.{cluster_name}.apps.{domain_name}"

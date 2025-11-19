@@ -7,6 +7,7 @@ from datetime import datetime
 from src.database import cluster_store
 from src.services import vlan_sync_service
 from src.models import SiteResponse
+from src.config import config
 
 router = APIRouter(prefix="/api", tags=["combined"])
 
@@ -44,13 +45,14 @@ async def get_combined_sites() -> List[SiteResponse]:
 
             # Transform to match ClusterResponse format
             # Use composite key for unique ID to support duplicate names across sites
+            domain_name = cluster.get("domainName", config.default_domain)
             cluster_entry = {
                 "id": f"vlan-{cluster['clusterName']}@{cluster['site']}",
                 "clusterName": cluster["clusterName"],
                 "site": cluster["site"],
                 "segments": cluster["segments"],
-                "domainName": cluster.get("domainName", "example.com"),
-                "consoleUrl": f"https://console-openshift-console.{cluster['clusterName']}.apps.{cluster.get('domainName', 'example.com')}",
+                "domainName": domain_name,
+                "consoleUrl": f"https://console-openshift-console.{cluster['clusterName']}.apps.{domain_name}",
                 "createdAt": datetime.utcnow().isoformat(),  # Use current time for VLAN Manager clusters
                 "source": "vlan-manager",
                 "metadata": cluster.get("metadata", {})

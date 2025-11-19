@@ -67,9 +67,9 @@ function showToast(message, type = 'info', duration = 3000) {
 // Copy to Clipboard
 function copyToClipboard(text, label = 'Text') {
     navigator.clipboard.writeText(text).then(() => {
-        showToast(`${label} copied to clipboard!`, 'success', 2000);
+        showToast(`${label} copied`, 'success', 1500);
     }).catch(() => {
-        showToast('Failed to copy to clipboard', 'error');
+        showToast('Copy failed', 'error', 2000);
     });
 }
 

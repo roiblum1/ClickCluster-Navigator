@@ -14,7 +14,8 @@ DEFAULT_CONFIG = {
     },
     "application": {
         "host": "0.0.0.0",
-        "port": 8000
+        "port": 8000,
+        "default_domain": "example.com"
     },
     "auth": {
         "admin_username": "admin",
@@ -81,6 +82,11 @@ class Config:
     def app_title(self) -> str:
         """Get application title from environment or default."""
         return os.getenv("APP_TITLE", "OpenShift Cluster Navigator")
+
+    @property
+    def default_domain(self) -> str:
+        """Get default domain from environment or config."""
+        return os.getenv("DEFAULT_DOMAIN", self._config.get("application", {}).get("default_domain", "example.com"))
 
 
 # Global config instance
