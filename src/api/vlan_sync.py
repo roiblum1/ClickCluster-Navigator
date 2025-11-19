@@ -71,11 +71,13 @@ async def get_sync_status() -> Dict:
         cache_age = (datetime.now().timestamp() - cache_mtime) / 60  # in minutes
         last_updated = datetime.fromtimestamp(cache_mtime).isoformat()
 
+    from src.config import config
+    
     return {
         "service_running": vlan_sync_service.is_running,
-        "sync_interval_seconds": 300,
+        "sync_interval_seconds": config.sync_interval,
         "cache_exists": cache_exists,
         "cache_age_minutes": round(cache_age, 2) if cache_age else None,
         "last_updated": last_updated,
-        "vlan_manager_url": "http://0.0.0.0:9000"
+        "vlan_manager_url": config.vlan_manager_url
     }

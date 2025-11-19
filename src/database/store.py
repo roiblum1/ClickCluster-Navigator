@@ -6,6 +6,8 @@ from typing import Dict, List, Optional
 from datetime import datetime
 import uuid
 from collections import defaultdict
+from src.utils import ClusterUtils, ClusterValidator
+from src.config import config
 
 
 class ClusterStore:
@@ -17,18 +19,21 @@ class ClusterStore:
 
     def create_cluster(self, cluster_data: dict) -> dict:
         """Create a new cluster entry."""
-        from src.config import config
         cluster_id = str(uuid.uuid4())
         cluster_name = cluster_data["clusterName"]
+        
+        # Validate and normalize cluster name
+        cluster_name_lower = ClusterValidator.validate_cluster_name(cluster_name)
+        
         site = cluster_data["site"]
         domain_name = cluster_data.get("domainName", config.default_domain)
 
-        # Generate console URL
-        console_url = f"https://console-openshift-console.{cluster_name}.apps.{domain_name}"
+        # Generate console URL using utility
+        console_url = ClusterUtils.generate_console_url(cluster_name_lower, domain_name)
 
         cluster = {
             "id": cluster_id,
-            "clusterName": cluster_name,
+            "clusterName": cluster_name_lower,
             "site": site,
             "segments": cluster_data["segments"],
             "domainName": domain_name,
@@ -96,9 +101,9 @@ class ClusterStore:
 
         # Regenerate console URL if domain changed
         if "domainName" in update_data:
-            cluster["consoleUrl"] = (
-                f"https://console-openshift-console.{cluster['clusterName']}"
-                f".apps.{cluster['domainName']}"
+            cluster["consoleUrl"] = ClusterUtils.generate_console_url(
+                cluster['clusterName'],
+                cluster['domainName']
             )
 
         return cluster

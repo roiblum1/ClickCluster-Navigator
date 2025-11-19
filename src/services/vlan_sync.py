@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import List, Dict, Optional
 import logging
 from src.config import config
+from src.utils import ClusterValidator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -25,34 +26,38 @@ class VLANSyncService:
         self.cache_file = CACHE_FILE
         self.cache_file.parent.mkdir(parents=True, exist_ok=True)
         self.is_running = False
+        self._http_timeout = 10.0
 
-    async def fetch_allocated_segments(self) -> List[Dict]:
-        """Fetch only allocated segments from VLAN Manager API."""
+    async def _fetch_from_api(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
+        """
+        Generic method to fetch data from VLAN Manager API.
+        
+        Args:
+            endpoint: API endpoint path (e.g., '/api/segments')
+            params: Optional query parameters
+            
+        Returns:
+            JSON response data or None on error
+        """
         try:
             vlan_url = config.vlan_manager_url
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(
-                    f"{vlan_url}/api/segments",
-                    params={"allocated": True}
-                )
+            async with httpx.AsyncClient(timeout=self._http_timeout) as client:
+                response = await client.get(f"{vlan_url}{endpoint}", params=params)
                 response.raise_for_status()
                 return response.json()
         except Exception as e:
-            logger.error(f"Failed to fetch allocated segments: {e}")
-            return []
+            logger.error(f"Failed to fetch from {endpoint}: {e}")
+            return None
+
+    async def fetch_allocated_segments(self) -> List[Dict]:
+        """Fetch only allocated segments from VLAN Manager API."""
+        data = await self._fetch_from_api("/api/segments", params={"allocated": True})
+        return data if data is not None else []
 
     async def fetch_sites(self) -> List[str]:
         """Fetch available sites from VLAN Manager API."""
-        try:
-            vlan_url = config.vlan_manager_url
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.get(f"{vlan_url}/api/sites")
-                response.raise_for_status()
-                data = response.json()
-                return data.get("sites", [])
-        except Exception as e:
-            logger.error(f"Failed to fetch sites: {e}")
-            return []
+        data = await self._fetch_from_api("/api/sites")
+        return data.get("sites", []) if data else []
 
     def transform_to_clusters(self, segments: List[Dict]) -> Dict:
         """
@@ -85,13 +90,19 @@ class VLANSyncService:
                 if not cluster_name:
                     continue
 
-                # Use composite key (cluster_name, site) to allow duplicate names across sites
-                cluster_key = f"{cluster_name}@{site}"
+                # Only process clusters that start with 'ocp4-'
+                if not ClusterValidator.is_valid_cluster_name(cluster_name):
+                    logger.debug(f"Skipping cluster '{cluster_name}' - does not start with 'ocp4-'")
+                    continue
+
+                # Normalize and use composite key (cluster_name, site) to allow duplicate names across sites
+                cluster_name_lower = ClusterValidator.validate_cluster_name(cluster_name)
+                cluster_key = f"{cluster_name_lower}@{site}"
 
                 # Initialize cluster entry if not exists
                 if cluster_key not in clusters_by_key:
                     clusters_by_key[cluster_key] = {
-                        "clusterName": cluster_name,
+                        "clusterName": cluster_name_lower,
                         "site": site,
                         "segments": [],
                         "domainName": config.default_domain,  # Use configurable domain
@@ -106,20 +117,39 @@ class VLANSyncService:
                 if segment_cidr not in clusters_by_key[cluster_key]["segments"]:
                     clusters_by_key[cluster_key]["segments"].append(segment_cidr)
 
-                # Add metadata
-                vlan_id = segment.get("vlan_id")
-                if vlan_id and vlan_id not in clusters_by_key[cluster_key]["metadata"]["vlan_ids"]:
-                    clusters_by_key[cluster_key]["metadata"]["vlan_ids"].append(vlan_id)
-
-                epg_name = segment.get("epg_name")
-                if epg_name and epg_name not in clusters_by_key[cluster_key]["metadata"]["epg_names"]:
-                    clusters_by_key[cluster_key]["metadata"]["epg_names"].append(epg_name)
-
-                vrf = segment.get("vrf")
-                if vrf and vrf not in clusters_by_key[cluster_key]["metadata"]["vrfs"]:
-                    clusters_by_key[cluster_key]["metadata"]["vrfs"].append(vrf)
+                # Add metadata using helper method
+                VLANSyncService._add_to_metadata_list(
+                    clusters_by_key[cluster_key]["metadata"],
+                    "vlan_ids",
+                    segment.get("vlan_id")
+                )
+                VLANSyncService._add_to_metadata_list(
+                    clusters_by_key[cluster_key]["metadata"],
+                    "epg_names",
+                    segment.get("epg_name")
+                )
+                VLANSyncService._add_to_metadata_list(
+                    clusters_by_key[cluster_key]["metadata"],
+                    "vrfs",
+                    segment.get("vrf")
+                )
 
         return list(clusters_by_key.values())
+
+    @staticmethod
+    def _add_to_metadata_list(metadata: Dict, key: str, value: Optional[str]) -> None:
+        """
+        Add value to metadata list if it exists and is not already present.
+        
+        Args:
+            metadata: Metadata dictionary
+            key: Key in metadata dictionary (list key)
+            value: Value to add (if not None)
+        """
+        if value and value not in metadata.get(key, []):
+            if key not in metadata:
+                metadata[key] = []
+            metadata[key].append(value)
 
     def save_to_cache(self, data: Dict):
         """Save data to local cache file."""

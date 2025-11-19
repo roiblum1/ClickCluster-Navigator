@@ -5,6 +5,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 import ipaddress
 from datetime import datetime
+from src.utils import ClusterValidator
 
 
 class ClusterSegment(BaseModel):
@@ -37,7 +38,7 @@ class ClusterCreate(BaseModel):
         min_length=3,
         max_length=100,
         pattern=r'^[a-z0-9]([-a-z0-9]*[a-z0-9])?$',
-        description="Cluster name (lowercase alphanumeric with hyphens)"
+        description="Cluster name (must start with 'ocp4-', lowercase alphanumeric with hyphens)"
     )
     site: str = Field(
         ...,
@@ -72,9 +73,11 @@ class ClusterCreate(BaseModel):
     @classmethod
     def validate_cluster_name(cls, v: str) -> str:
         """Additional validation for cluster name."""
+        v = v.lower()
         if v.startswith('-') or v.endswith('-'):
             raise ValueError("Cluster name cannot start or end with a hyphen")
-        return v.lower()
+        # Use ClusterValidator for prefix validation
+        return ClusterValidator.validate_cluster_name(v)
 
     model_config = ConfigDict(json_schema_extra={
         "example": {

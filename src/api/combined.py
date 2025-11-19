@@ -8,6 +8,7 @@ from src.database import cluster_store
 from src.services import vlan_sync_service
 from src.models import SiteResponse
 from src.config import config
+from src.utils import ClusterUtils
 
 router = APIRouter(prefix="/api", tags=["combined"])
 
@@ -52,7 +53,7 @@ async def get_combined_sites() -> List[SiteResponse]:
                 "site": cluster["site"],
                 "segments": cluster["segments"],
                 "domainName": domain_name,
-                "consoleUrl": f"https://console-openshift-console.{cluster['clusterName']}.apps.{domain_name}",
+                "consoleUrl": ClusterUtils.generate_console_url(cluster['clusterName'], domain_name),
                 "createdAt": datetime.utcnow().isoformat(),  # Use current time for VLAN Manager clusters
                 "source": "vlan-manager",
                 "metadata": cluster.get("metadata", {})
