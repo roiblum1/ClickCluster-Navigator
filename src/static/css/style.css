@@ -1117,6 +1117,7 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
     cursor: pointer;
     position: relative;
     user-select: none;
+    transition: var(--transition-fast);
 }
 
 .segment-badge:hover {
@@ -1127,17 +1128,31 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
     box-shadow: 0 2px 8px rgba(238, 0, 0, 0.3);
 }
 
+.segment-badge:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(238, 0, 0, 0.2);
+}
+
 /* Enhanced Cluster Name - Click to copy */
 .cluster-header h4 {
     cursor: pointer;
     position: relative;
     user-select: none;
     transition: var(--transition-fast);
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin: -2px -4px;
 }
 
 .cluster-header h4:hover {
     color: var(--primary-color);
+    background: rgba(238, 0, 0, 0.05);
     transform: translateX(4px);
+}
+
+.cluster-header h4:active {
+    transform: translateX(2px);
+    background: rgba(238, 0, 0, 0.1);
 }
 
 /* Active Filters */

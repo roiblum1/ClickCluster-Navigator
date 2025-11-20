@@ -66,6 +66,25 @@ function showToast(message, type = 'info', duration = 3000) {
 
 // Copy to Clipboard
 function copyToClipboard(text, label = 'Text') {
+    // Fallback for older browsers
+    if (!navigator.clipboard) {
+        // Use fallback method
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showToast(`${label} copied`, 'success', 1500);
+        } catch (err) {
+            showToast('Copy failed', 'error', 2000);
+        }
+        document.body.removeChild(textArea);
+        return;
+    }
+
     navigator.clipboard.writeText(text).then(() => {
         showToast(`${label} copied`, 'success', 1500);
     }).catch(() => {
@@ -124,15 +143,29 @@ setTimeout(() => {
 }, 500);
 
 // Add copy functionality to cluster cards
+// Use event delegation to handle dynamically created elements
 document.addEventListener('click', (e) => {
-    // Copy segment on click
-    if (e.target.classList.contains('segment-badge')) {
-        copyToClipboard(e.target.textContent, 'Segment');
+    // Copy segment on click - check if clicked element or its parent is a segment badge
+    const segmentBadge = e.target.closest('.segment-badge');
+    if (segmentBadge) {
+        e.preventDefault();
+        e.stopPropagation();
+        const segmentText = segmentBadge.textContent.trim();
+        copyToClipboard(segmentText, 'Segment');
+        return;
     }
 
-    // Copy cluster name on click
-    if (e.target.tagName === 'H4' && e.target.closest('.cluster-card')) {
-        copyToClipboard(e.target.textContent, 'Cluster name');
+    // Copy cluster name on click - check if clicked element is H4 in cluster header
+    const clusterHeader = e.target.closest('.cluster-header');
+    if (clusterHeader) {
+        const clusterNameElement = clusterHeader.querySelector('h4');
+        if (clusterNameElement && (e.target === clusterNameElement || e.target.closest('h4'))) {
+            e.preventDefault();
+            e.stopPropagation();
+            const clusterName = clusterNameElement.textContent.trim();
+            copyToClipboard(clusterName, 'Cluster name');
+            return;
+        }
     }
 });
 
