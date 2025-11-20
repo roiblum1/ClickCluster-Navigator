@@ -1,9 +1,12 @@
 """
 API routes for VLAN Manager sync data.
 """
+import os
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
 from typing import Dict
 from src.services import vlan_sync_service
+from src.config import config
 
 router = APIRouter(prefix="/api/vlan-sync", tags=["vlan-sync"])
 
@@ -59,9 +62,6 @@ async def trigger_sync() -> Dict:
 )
 async def get_sync_status() -> Dict:
     """Get the current status of the VLAN sync service."""
-    import os
-    from datetime import datetime
-
     cache_exists = vlan_sync_service.cache_file.exists()
     cache_age = None
     last_updated = None
@@ -71,8 +71,6 @@ async def get_sync_status() -> Dict:
         cache_age = (datetime.now().timestamp() - cache_mtime) / 60  # in minutes
         last_updated = datetime.fromtimestamp(cache_mtime).isoformat()
 
-    from src.config import config
-    
     return {
         "service_running": vlan_sync_service.is_running,
         "sync_interval_seconds": config.sync_interval,

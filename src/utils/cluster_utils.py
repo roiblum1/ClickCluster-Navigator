@@ -70,7 +70,7 @@ class ClusterUtils:
             domain_name = config.default_domain
         
         cluster_name_lower = cluster_name.lower().strip()
-        return f"https://console-openshift-console.{cluster_name_lower}.apps.{domain_name}"
+        return f"https://console-openshift-console.apps.{cluster_name_lower}.{domain_name}"
 
     @staticmethod
     def normalize_cluster_name(cluster_name: str) -> str:

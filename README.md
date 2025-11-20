@@ -181,7 +181,7 @@ The application uses Pydantic for robust data validation:
 
 For each cluster, the application automatically generates the OpenShift console URL:
 ```
-https://console-openshift-console.<cluster-name>.apps.<domain-name>
+https://console-openshift-console.apps.<cluster-name>.<domain-name>
 ```
 
 ### Site Organization

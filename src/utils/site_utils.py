@@ -1,15 +1,17 @@
 """
 Utility functions for site operations.
 """
-from typing import List, Dict
-from src.models import SiteResponse, ClusterResponse
+from typing import List, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.models import SiteResponse, ClusterResponse
 
 
 class SiteUtils:
     """Utility class for site operations."""
 
     @staticmethod
-    def create_site_response(site_name: str, clusters: List[Dict]) -> SiteResponse:
+    def create_site_response(site_name: str, clusters: List[Dict]) -> "SiteResponse":
         """
         Create a SiteResponse from site name and cluster dictionaries.
         
@@ -20,6 +22,9 @@ class SiteUtils:
         Returns:
             SiteResponse object
         """
+        # Lazy import to avoid circular dependency
+        from src.models import SiteResponse, ClusterResponse
+        
         return SiteResponse(
             site=site_name,
             clusterCount=len(clusters),
@@ -27,7 +32,7 @@ class SiteUtils:
         )
 
     @staticmethod
-    def create_sites_response_list(sites_data: Dict[str, List[Dict]]) -> List[SiteResponse]:
+    def create_sites_response_list(sites_data: Dict[str, List[Dict]]) -> List["SiteResponse"]:
         """
         Create a list of SiteResponse objects from sites dictionary.
         

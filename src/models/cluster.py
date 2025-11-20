@@ -109,7 +109,7 @@ class ClusterResponse(BaseModel):
                 "site": "site1",
                 "segments": ["192.178.1.0/24", "192.178.2.0/24"],
                 "domainName": "example.com",
-                "consoleUrl": "https://console-openshift-console.ocp4-roi.apps.example.com",
+                "consoleUrl": "https://console-openshift-console.apps.ocp4-roi.example.com",
                 "createdAt": "2025-11-13T12:00:00Z"
             }
         }
