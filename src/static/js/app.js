@@ -170,6 +170,10 @@ async function hardRefresh() {
             showRefreshStatus(`Sync successful! Found ${result.data.stats.total_clusters} clusters`, 'success');
             loadSyncStatus();
             loadClusters();
+            // Refresh dashboard if visible
+            if (document.getElementById('statisticsDashboard').style.display !== 'none') {
+                loadStatistics();
+            }
         } else {
             showRefreshStatus('Sync failed', 'error');
         }
@@ -188,11 +192,41 @@ async function loadSyncStatus() {
         if (response.ok) {
             const status = await response.json();
             const lastSyncElement = document.getElementById('lastSyncTime');
+            const lastSyncTimeDisplay = document.getElementById('lastSyncTimeValue');
             const statsElement = document.getElementById('syncStats');
 
+            // Update admin panel sync time
             if (lastSyncElement && status.last_updated) {
                 const date = new Date(status.last_updated);
                 lastSyncElement.textContent = date.toLocaleString();
+            }
+
+            // Update header sync time display
+            if (lastSyncTimeDisplay) {
+                if (status.last_updated) {
+                    const date = new Date(status.last_updated);
+                    const now = new Date();
+                    const diffMs = now - date;
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const diffHours = Math.floor(diffMins / 60);
+                    const diffDays = Math.floor(diffHours / 24);
+                    
+                    let timeAgo;
+                    if (diffMins < 1) {
+                        timeAgo = 'Just now';
+                    } else if (diffMins < 60) {
+                        timeAgo = `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
+                    } else if (diffHours < 24) {
+                        timeAgo = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+                    } else {
+                        timeAgo = `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+                    }
+                    
+                    lastSyncTimeDisplay.textContent = timeAgo;
+                    lastSyncTimeDisplay.title = date.toLocaleString();
+                } else {
+                    lastSyncTimeDisplay.textContent = 'Never';
+                }
             }
 
             if (statsElement && status.cache_age_minutes !== null) {
@@ -430,4 +464,19 @@ function updateStats(sites) {
 
     document.getElementById('clusterCount').textContent = `${totalClusters} cluster${totalClusters !== 1 ? 's' : ''}`;
     document.getElementById('siteCount').textContent = `${totalSites} site${totalSites !== 1 ? 's' : ''}`;
+}
+
+// Export data function
+function exportData(format) {
+    const url = `${API_BASE_URL}/export/${format}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    if (typeof showToast === 'function') {
+        showToast(`Exporting as ${format.toUpperCase()}...`, 'info', 2000);
+    }
 }

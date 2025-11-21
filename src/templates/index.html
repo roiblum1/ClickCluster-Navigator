@@ -19,9 +19,15 @@
                     <div class="header-text">
                         <h1>{{ app_title }}</h1>
                         <p class="subtitle">Navigate your OpenShift clusters organized by site</p>
-                        <div class="sync-indicator" id="syncIndicator" style="display: none;">
-                            <span class="sync-dot"></span>
-                            Syncing with VLAN Manager...
+                        <div class="sync-info">
+                            <div class="sync-indicator" id="syncIndicator" style="display: none;">
+                                <span class="sync-dot"></span>
+                                Syncing with VLAN Manager...
+                            </div>
+                            <div class="last-sync-time" id="lastSyncTimeDisplay">
+                                <span class="sync-label">Last sync:</span>
+                                <span class="sync-value" id="lastSyncTimeValue">Loading...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -105,11 +111,96 @@
                 </div>
             </section>
 
+            <!-- Statistics Dashboard -->
+            <section id="statisticsDashboard" class="statistics-dashboard" style="display: none;">
+                <div class="section-header">
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        Statistics Dashboard
+                    </h2>
+                    <button class="btn-secondary" onclick="toggleDashboard()">Close</button>
+                </div>
+                
+                <div class="dashboard-content">
+                    <div class="stats-overview">
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-value" id="statTotalClusters">0</div>
+                            <div class="stat-label">Total Clusters</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🌐</div>
+                            <div class="stat-value" id="statTotalSites">0</div>
+                            <div class="stat-label">Total Sites</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔗</div>
+                            <div class="stat-value" id="statTotalSegments">0</div>
+                            <div class="stat-label">Total Segments</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-value" id="statAvgSegments">0</div>
+                            <div class="stat-label">Avg Segments/Cluster</div>
+                        </div>
+                    </div>
+                    
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Clusters per Site</h3>
+                            <canvas id="clustersPerSiteChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Source Distribution</h3>
+                            <canvas id="sourceDistributionChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Domain Distribution</h3>
+                            <canvas id="domainDistributionChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Segments per Site</h3>
+                            <canvas id="segmentsPerSiteChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Clusters Display -->
             <section class="clusters-section">
                 <div class="section-header">
                     <h2>Clusters</h2>
                     <div class="header-actions">
+                        <button class="btn-secondary" onclick="toggleDashboard()" title="Statistics Dashboard">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            Dashboard
+                        </button>
+                        <button class="btn-secondary" onclick="exportData('csv')" title="Export as CSV">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            CSV
+                        </button>
+                        <button class="btn-secondary" onclick="exportData('excel')" title="Export as Excel">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Excel
+                        </button>
                         <button class="btn-refresh" onclick="loadClusters()" title="Refresh Data (Ctrl+R)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
@@ -187,7 +278,9 @@
     <!-- Tooltip -->
     <div id="tooltip" class="tooltip" style="display: none;"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/static/js/app.js"></script>
     <script src="/static/js/enhanced.js"></script>
+    <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
