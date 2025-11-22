@@ -254,6 +254,7 @@ async function loadClusters() {
     emptyState.style.display = 'none';
 
     try {
+        console.log('[loadClusters] Fetching data from:', `${API_BASE_URL}/sites-combined`);
         const response = await fetch(`${API_BASE_URL}/sites-combined`);
 
         if (!response.ok) {
@@ -261,6 +262,7 @@ async function loadClusters() {
         }
 
         const sites = await response.json();
+        console.log('[loadClusters] Received sites data:', JSON.stringify(sites, null, 2));
 
         // Hide loading spinner
         loadingSpinner.classList.add('hidden');
@@ -277,6 +279,11 @@ async function loadClusters() {
         allSites = sites;
         allClusters = sites.flatMap(site => site.clusters);
 
+        console.log('[loadClusters] Total clusters extracted:', allClusters.length);
+        allClusters.forEach((cluster, idx) => {
+            console.log(`[loadClusters] Cluster ${idx + 1}: name="${cluster.clusterName}", site="${cluster.site}", source="${cluster.source}"`);
+        });
+
         // Populate site filter dropdown
         populateSiteFilter(sites);
 
@@ -287,6 +294,7 @@ async function loadClusters() {
         updateStats(sites);
 
     } catch (error) {
+        console.error('[loadClusters] Error:', error);
         loadingSpinner.classList.add('hidden');
         clustersContainer.innerHTML = `<p class="error-message">Error loading clusters: ${error.message}</p>`;
     }
@@ -410,9 +418,30 @@ function createClusterCard(cluster) {
     const card = document.createElement('div');
     card.className = 'cluster-card';
 
+    console.log(`[createClusterCard] Creating card for "${cluster.clusterName}"`);
+    console.log(`[createClusterCard] Cluster object:`, JSON.stringify(cluster, null, 2));
+    console.log(`[createClusterCard] cluster.source value: "${cluster.source}" (type: ${typeof cluster.source})`);
+    console.log(`[createClusterCard] Comparison result: cluster.source === 'vlan-manager' is ${cluster.source === 'vlan-manager'}`);
+
     const sourceIndicator = cluster.source === 'vlan-manager' ?
         '<span class="source-badge vlan">VLAN Manager</span>' :
         '<span class="source-badge manual">Manual</span>';
+
+    console.log(`[createClusterCard] Generated badge HTML: ${sourceIndicator}`);
+
+    // Add delete button for manual clusters if admin is logged in
+    const isManual = cluster.source === 'manual';
+    const isAdmin = adminCredentials !== null;
+    const deleteButton = (isManual && isAdmin) ? `
+        <button class="btn-delete btn-small" onclick="deleteCluster('${cluster.id}', '${cluster.clusterName}', event)" title="Delete cluster">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+        </button>
+    ` : '';
 
     card.innerHTML = `
         <div class="cluster-header">
@@ -444,6 +473,7 @@ function createClusterCard(cluster) {
                     <line x1="10" y1="14" x2="21" y2="3"></line>
                 </svg>
             </a>
+            ${deleteButton}
         </div>
     `;
 
@@ -478,5 +508,220 @@ function exportData(format) {
     
     if (typeof showToast === 'function') {
         showToast(`Exporting as ${format.toUpperCase()}...`, 'info', 2000);
+    }
+}
+
+// Toggle create cluster form
+async function toggleCreateClusterForm() {
+    const form = document.getElementById('createClusterForm');
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        document.getElementById('clusterForm').reset();
+        document.getElementById('createClusterMessage').style.display = 'none';
+
+        // Load sites for dropdown
+        await loadSitesDropdown();
+    } else {
+        form.style.display = 'none';
+    }
+}
+
+// Load sites into dropdown
+async function loadSitesDropdown() {
+    const siteSelect = document.getElementById('newClusterSite');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/vlan-sync/sites`);
+        if (response.ok) {
+            const data = await response.json();
+
+            // Clear existing options except the first one
+            siteSelect.innerHTML = '<option value="">Select a site...</option>';
+
+            // Add sites from VLAN Manager
+            if (data.sites && data.sites.length > 0) {
+                data.sites.forEach(site => {
+                    const option = document.createElement('option');
+                    option.value = site;
+                    option.textContent = site;
+                    siteSelect.appendChild(option);
+                });
+            } else {
+                // If no sites, add a message option
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No sites available';
+                option.disabled = true;
+                siteSelect.appendChild(option);
+            }
+        } else {
+            console.error('Failed to load sites');
+        }
+    } catch (error) {
+        console.error('Error loading sites:', error);
+    }
+}
+
+// Create cluster function
+async function createCluster(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const messageElement = document.getElementById('createClusterMessage');
+
+    // Check if admin is logged in
+    if (!adminCredentials) {
+        showClusterMessage('You must be logged in as admin to create clusters', 'error');
+        return;
+    }
+
+    // Get form data
+    const clusterName = document.getElementById('newClusterName').value.trim().toLowerCase();
+    const site = document.getElementById('newClusterSite').value.trim();
+    const segmentsText = document.getElementById('newClusterSegments').value.trim();
+    const domainName = document.getElementById('newClusterDomain').value.trim();
+
+    // Parse segments (one per line)
+    const segments = segmentsText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+
+    if (segments.length === 0) {
+        showClusterMessage('Please enter at least one network segment', 'error');
+        return;
+    }
+
+    if (!site) {
+        showClusterMessage('Please select a site', 'error');
+        return;
+    }
+
+    // Create cluster data
+    const clusterData = {
+        clusterName: clusterName,
+        site: site,
+        segments: segments,
+        domainName: domainName || 'example.com'
+    };
+
+    console.log('[createCluster] Creating cluster with data:', clusterData);
+    console.log('[createCluster] Using credentials:', adminCredentials ? 'Present' : 'Missing');
+    console.log('[createCluster] Admin credentials (base64):', adminCredentials);
+
+    // Try to decode and show what username/password we're sending (for debugging)
+    if (adminCredentials) {
+        try {
+            const decoded = atob(adminCredentials);
+            console.log('[createCluster] Decoded credentials:', decoded);
+        } catch (e) {
+            console.error('[createCluster] Failed to decode credentials:', e);
+        }
+    }
+
+    // Disable submit button
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating...';
+
+    try {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${adminCredentials}`
+        };
+        console.log('[createCluster] Request headers:', headers);
+
+        const response = await fetch(`${API_BASE_URL}/clusters`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(clusterData)
+        });
+
+        console.log('[createCluster] Response status:', response.status);
+
+        if (response.ok) {
+            const result = await response.json();
+            console.log('[createCluster] Cluster created:', result);
+            showClusterMessage(`Cluster "${clusterName}" created successfully!`, 'success');
+
+            // Reset form
+            form.reset();
+
+            // Reload clusters
+            setTimeout(() => {
+                loadClusters();
+                toggleCreateClusterForm();
+            }, 1500);
+        } else {
+            const error = await response.json();
+            console.error('[createCluster] Error response:', error);
+            showClusterMessage(error.detail || 'Failed to create cluster', 'error');
+        }
+    } catch (error) {
+        console.error('[createCluster] Exception:', error);
+        showClusterMessage(`Error: ${error.message}`, 'error');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+    }
+}
+
+// Show cluster creation message
+function showClusterMessage(message, type) {
+    const messageElement = document.getElementById('createClusterMessage');
+    if (!messageElement) return;
+
+    messageElement.textContent = message;
+    messageElement.className = `message ${type}`;
+    messageElement.style.display = 'block';
+
+    if (type === 'success') {
+        setTimeout(() => {
+            messageElement.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Delete cluster function
+async function deleteCluster(clusterId, clusterName, event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to delete the cluster "${clusterName}"?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+
+    console.log(`[deleteCluster] Deleting cluster: ${clusterName} (ID: ${clusterId})`);
+
+    if (!adminCredentials) {
+        alert('You must be logged in as admin to delete clusters');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/clusters/${clusterId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Basic ${adminCredentials}`
+            }
+        });
+
+        console.log(`[deleteCluster] Response status: ${response.status}`);
+
+        if (response.status === 204 || response.ok) {
+            console.log(`[deleteCluster] Cluster deleted successfully`);
+            // Reload clusters to reflect changes
+            loadClusters();
+        } else if (response.status === 403) {
+            const error = await response.json();
+            alert(error.detail || 'Cannot delete VLAN Manager clusters');
+        } else if (response.status === 404) {
+            alert('Cluster not found');
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Failed to delete cluster');
+        }
+    } catch (error) {
+        console.error('[deleteCluster] Error:', error);
+        alert(`Error deleting cluster: ${error.message}`);
     }
 }

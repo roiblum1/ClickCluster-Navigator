@@ -99,6 +99,7 @@ class ClusterResponse(BaseModel):
     domainName: str = Field(..., description="Domain name")
     consoleUrl: str = Field(..., description="OpenShift console URL")
     createdAt: datetime = Field(..., description="Creation timestamp")
+    source: Optional[str] = Field(default="manual", description="Cluster source: 'vlan-manager' or 'manual'")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -110,7 +111,8 @@ class ClusterResponse(BaseModel):
                 "segments": ["192.178.1.0/24", "192.178.2.0/24"],
                 "domainName": "example.com",
                 "consoleUrl": "https://console-openshift-console.apps.ocp4-roi.example.com",
-                "createdAt": "2025-11-13T12:00:00Z"
+                "createdAt": "2025-11-13T12:00:00Z",
+                "source": "vlan-manager"
             }
         }
     )

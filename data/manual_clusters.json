@@ -1,0 +1,16 @@
+{
+  "clusters": {
+    "95d15a08-236e-4e88-9b97-2bfd914d5bce": {
+      "id": "95d15a08-236e-4e88-9b97-2bfd914d5bce",
+      "clusterName": "ocp4-manual",
+      "site": "Site2",
+      "segments": [
+        "172.16.0.0/24"
+      ],
+      "domainName": "example.com",
+      "consoleUrl": "https://console-openshift-console.apps.ocp4-manual.example.com",
+      "createdAt": "2025-11-22T21:01:15.734730"
+    }
+  },
+  "last_updated": "2025-11-22T21:01:15.734739"
+}

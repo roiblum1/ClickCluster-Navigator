@@ -79,3 +79,29 @@ async def get_sync_status() -> Dict:
         "last_updated": last_updated,
         "vlan_manager_url": config.vlan_manager_url
     }
+
+
+@router.get(
+    "/sites",
+    summary="Get available sites from VLAN Manager"
+)
+async def get_sites() -> Dict:
+    """
+    Get the list of available sites from VLAN Manager.
+    Returns a list of unique site names.
+    """
+    cached_data = vlan_sync_service.load_from_cache()
+
+    if cached_data:
+        # Extract unique site names from the sites list
+        sites = cached_data.get("sites", [])
+        site_names = sorted(list(set(sites)))
+        return {
+            "sites": site_names,
+            "count": len(site_names)
+        }
+    else:
+        return {
+            "sites": [],
+            "count": 0
+        }

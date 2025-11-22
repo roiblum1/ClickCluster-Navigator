@@ -94,6 +94,13 @@
                         </svg>
                         Hard Refresh from VLAN Manager
                     </button>
+                    <button class="btn-secondary" onclick="toggleCreateClusterForm()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Create Cluster
+                    </button>
                     <button class="btn-secondary" onclick="exportClusters()">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -103,6 +110,48 @@
                         Export JSON
                     </button>
                     <div id="refreshStatus" class="message"></div>
+                </div>
+
+                <!-- Create Cluster Form -->
+                <div id="createClusterForm" class="create-cluster-form" style="display: none;">
+                    <h3>Create New Cluster</h3>
+                    <form id="clusterForm" onsubmit="createCluster(event)">
+                        <div class="form-group">
+                            <label for="newClusterName">Cluster Name *</label>
+                            <input type="text" id="newClusterName" name="clusterName"
+                                   placeholder="ocp4-example"
+                                   pattern="^ocp4-[a-z0-9][a-z0-9\-]*[a-z0-9]$"
+                                   title="Must start with 'ocp4-', lowercase alphanumeric with hyphens"
+                                   required>
+                            <small>Must start with 'ocp4-', lowercase alphanumeric with hyphens</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="newClusterSite">Site *</label>
+                            <select id="newClusterSite" name="site" required>
+                                <option value="">Select a site...</option>
+                            </select>
+                            <small>Sites from VLAN Manager</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="newClusterSegments">Network Segments (CIDR) *</label>
+                            <textarea id="newClusterSegments" name="segments"
+                                      placeholder="192.168.1.0/24&#10;192.168.2.0/24"
+                                      rows="3"
+                                      required></textarea>
+                            <small>One CIDR per line (e.g., 192.168.1.0/24)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="newClusterDomain">Domain Name</label>
+                            <input type="text" id="newClusterDomain" name="domainName"
+                                   placeholder="example.com"
+                                   value="example.com">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">Create Cluster</button>
+                            <button type="button" class="btn-secondary" onclick="toggleCreateClusterForm()">Cancel</button>
+                        </div>
+                    </form>
+                    <div id="createClusterMessage" class="message"></div>
                 </div>
                 <div class="admin-info">
                     <p><strong>Data Source:</strong> VLAN Manager API (Auto-sync every 5 minutes)</p>

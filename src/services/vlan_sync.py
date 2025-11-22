@@ -3,13 +3,13 @@ Background service to sync data from VLAN Manager API.
 """
 import asyncio
 import httpx
-import json
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional
 import logging
 from src.config import config
 from src.utils import ClusterValidator
+from src.utils.file_operations import FileOperations
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,12 +41,21 @@ class VLANSyncService:
         """
         try:
             vlan_url = config.vlan_manager_url
+            full_url = f"{vlan_url}{endpoint}"
+            logger.debug(f"Attempting to fetch from: {full_url}")
             async with httpx.AsyncClient(timeout=self._http_timeout) as client:
-                response = await client.get(f"{vlan_url}{endpoint}", params=params)
+                response = await client.get(full_url, params=params)
                 response.raise_for_status()
+                logger.debug(f"Successfully fetched from {endpoint}")
                 return response.json()
+        except httpx.ConnectError as e:
+            logger.error(f"Connection error to {endpoint}: {e}. Check if VLAN Manager is running at {config.vlan_manager_url}")
+            return None
+        except httpx.TimeoutException as e:
+            logger.error(f"Timeout fetching from {endpoint}: {e}")
+            return None
         except Exception as e:
-            logger.error(f"Failed to fetch from {endpoint}: {e}")
+            logger.error(f"Failed to fetch from {endpoint}: {type(e).__name__}: {e}")
             return None
 
     async def fetch_allocated_segments(self) -> List[Dict]:
@@ -106,6 +115,7 @@ class VLANSyncService:
                         "site": site,
                         "segments": [],
                         "domainName": config.default_domain,  # Use configurable domain
+                        "source": "vlan-manager",  # Mark as VLAN Manager source
                         "metadata": {
                             "vlan_ids": [],
                             "epg_names": [],
@@ -152,28 +162,28 @@ class VLANSyncService:
             metadata[key].append(value)
 
     def save_to_cache(self, data: Dict):
-        """Save data to local cache file."""
-        try:
-            cache_data = {
-                "last_updated": datetime.utcnow().isoformat(),
-                "data": data
-            }
-            with open(self.cache_file, 'w') as f:
-                json.dump(cache_data, f, indent=2)
+        """Save data to local cache file with file locking for multi-replica support."""
+        cache_data = {
+            "last_updated": datetime.utcnow().isoformat(),
+            "data": data
+        }
+
+        # Use FileOperations utility for safe concurrent write
+        success = FileOperations.write_json_with_lock(self.cache_file, cache_data)
+
+        if success:
             logger.info(f"Cache updated successfully at {cache_data['last_updated']}")
-        except Exception as e:
-            logger.error(f"Failed to save cache: {e}")
+        else:
+            logger.error("Failed to save cache")
 
     def load_from_cache(self) -> Optional[Dict]:
-        """Load data from local cache file."""
-        try:
-            if self.cache_file.exists():
-                with open(self.cache_file, 'r') as f:
-                    cache_data = json.load(f)
-                logger.info(f"Loaded cache from {cache_data.get('last_updated', 'unknown time')}")
-                return cache_data.get("data")
-        except Exception as e:
-            logger.error(f"Failed to load cache: {e}")
+        """Load data from local cache file with file locking for multi-replica support."""
+        cache_data = FileOperations.read_json_with_lock(self.cache_file)
+
+        if cache_data:
+            logger.info(f"Loaded cache from {cache_data.get('last_updated', 'unknown time')}")
+            return cache_data.get("data")
+
         return None
 
     async def sync_data(self) -> Dict:

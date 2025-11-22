@@ -5,26 +5,78 @@ Can be easily replaced with SQLAlchemy/databases for production use.
 from typing import Dict, List, Optional
 from datetime import datetime
 import uuid
+from pathlib import Path
 from collections import defaultdict
 from src.utils import ClusterUtils, ClusterValidator
+from src.utils.file_operations import FileOperations
 from src.config import config
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ClusterStore:
-    """In-memory store for cluster data."""
+    """In-memory store for cluster data with persistence to disk."""
 
-    def __init__(self):
+    def __init__(self, cache_file: Path = Path("/app/data/manual_clusters.json")):
         self._clusters: Dict[str, dict] = {}
         self._sites: Dict[str, List[str]] = defaultdict(list)
+        self.cache_file = cache_file
+
+        # Load existing clusters from cache on startup
+        self._load_from_cache()
+
+    def _load_from_cache(self):
+        """Load manual clusters from cache file with file locking for multi-replica support."""
+        data = FileOperations.read_json_with_lock(self.cache_file)
+
+        if data:
+            # Restore clusters
+            for cluster_id, cluster in data.get("clusters", {}).items():
+                # Convert createdAt string back to datetime if needed
+                if isinstance(cluster.get("createdAt"), str):
+                    cluster["createdAt"] = datetime.fromisoformat(cluster["createdAt"])
+
+                self._clusters[cluster_id] = cluster
+                site = cluster["site"]
+                self._sites[site].append(cluster_id)
+
+            logger.info(f"Loaded {len(self._clusters)} manual clusters from cache")
+        else:
+            logger.info("No existing cache found or cache is empty")
+
+    def _save_to_cache(self):
+        """Save manual clusters to cache file with exclusive locking for multi-replica support."""
+        # Prepare data for JSON serialization
+        clusters_serializable = {}
+        for cluster_id, cluster in self._clusters.items():
+            cluster_copy = cluster.copy()
+            # Convert datetime to ISO format string
+            if isinstance(cluster_copy.get("createdAt"), datetime):
+                cluster_copy["createdAt"] = cluster_copy["createdAt"].isoformat()
+            clusters_serializable[cluster_id] = cluster_copy
+
+        data = {
+            "clusters": clusters_serializable,
+            "last_updated": datetime.utcnow().isoformat()
+        }
+
+        # Use FileOperations utility for safe concurrent write
+        success = FileOperations.write_json_with_lock(self.cache_file, data)
+
+        if success:
+            logger.debug(f"Successfully saved {len(self._clusters)} manual clusters to cache")
+        else:
+            logger.error(f"Failed to save manual clusters to cache")
 
     def create_cluster(self, cluster_data: dict) -> dict:
         """Create a new cluster entry."""
         cluster_id = str(uuid.uuid4())
         cluster_name = cluster_data["clusterName"]
-        
+
         # Validate and normalize cluster name
         cluster_name_lower = ClusterValidator.validate_cluster_name(cluster_name)
-        
+
         site = cluster_data["site"]
         domain_name = cluster_data.get("domainName", config.default_domain)
 
@@ -43,6 +95,9 @@ class ClusterStore:
 
         self._clusters[cluster_id] = cluster
         self._sites[site].append(cluster_id)
+
+        # Save to cache
+        self._save_to_cache()
 
         return cluster
 
@@ -106,6 +161,9 @@ class ClusterStore:
                 cluster['domainName']
             )
 
+        # Save to cache
+        self._save_to_cache()
+
         return cluster
 
     def delete_cluster(self, cluster_id: str) -> bool:
@@ -123,6 +181,10 @@ class ClusterStore:
             del self._sites[site]
 
         del self._clusters[cluster_id]
+
+        # Save to cache
+        self._save_to_cache()
+
         return True
 
     def cluster_exists(self, cluster_name: str, site: Optional[str] = None) -> bool:

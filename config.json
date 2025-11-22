@@ -1,6 +1,6 @@
 {
   "vlan_manager": {
-    "url": "http://0.0.0.0:9000",
+    "url": "http://host.containers.internal:9000",
     "sync_interval_seconds": 300
   },
   "application": {
