@@ -78,7 +78,8 @@ async def create_cluster(cluster_data: ClusterCreate) -> ClusterResponse:
             "clusterName": cluster_data.clusterName,
             "site": cluster_data.site,
             "segments": cluster_data.segments,
-            "domainName": cluster_data.domainName or "example.com"
+            "domainName": cluster_data.domainName or "example.com",
+            "loadBalancerIP": cluster_data.loadBalancerIP
         }
 
         cluster = cluster_service.create_manual_cluster(cluster_dict)
@@ -90,6 +91,77 @@ async def create_cluster(cluster_data: ClusterCreate) -> ClusterResponse:
             status_code=status.HTTP_409_CONFLICT,
             detail=e.message
         )
+
+
+@router.post(
+    "/bulk",
+    response_model=dict,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create multiple clusters (Admin only - CSV/Bulk)",
+    dependencies=[Depends(get_current_admin)]
+)
+async def create_clusters_bulk(clusters_data: List[ClusterCreate]):
+    """
+    Create multiple clusters in a single request (bulk operation).
+    Requires admin authentication.
+
+    Accepts a list of cluster objects. Each cluster must have:
+    - **clusterName**: Must start with 'ocp4-', lowercase alphanumeric with hyphens
+    - **site**: Site identifier
+    - **segments**: List of network segments in CIDR notation
+    - **domainName**: Optional domain name (defaults to config value)
+    - **loadBalancerIP**: Optional LoadBalancer IP (will be auto-resolved if not provided)
+
+    Returns summary of created clusters and any errors encountered.
+    """
+    results = {
+        "success": [],
+        "failed": [],
+        "total": len(clusters_data),
+        "created_count": 0,
+        "failed_count": 0
+    }
+
+    for cluster_data in clusters_data:
+        try:
+            # Check if cluster already exists
+            if cluster_service.cluster_exists(cluster_data.clusterName, cluster_data.site):
+                results["failed"].append({
+                    "clusterName": cluster_data.clusterName,
+                    "site": cluster_data.site,
+                    "error": f"Cluster already exists"
+                })
+                results["failed_count"] += 1
+                continue
+
+            # Create cluster
+            cluster_dict = {
+                "clusterName": cluster_data.clusterName,
+                "site": cluster_data.site,
+                "segments": cluster_data.segments,
+                "domainName": cluster_data.domainName or "example.com",
+                "loadBalancerIP": cluster_data.loadBalancerIP
+            }
+
+            cluster = cluster_service.create_manual_cluster(cluster_dict)
+
+            results["success"].append({
+                "id": cluster["id"],
+                "clusterName": cluster["clusterName"],
+                "site": cluster["site"],
+                "loadBalancerIP": cluster.get("loadBalancerIP")
+            })
+            results["created_count"] += 1
+
+        except Exception as e:
+            results["failed"].append({
+                "clusterName": cluster_data.clusterName,
+                "site": cluster_data.site,
+                "error": str(e)
+            })
+            results["failed_count"] += 1
+
+    return results
 
 
 @router.delete(

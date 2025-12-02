@@ -146,6 +146,14 @@
                                    placeholder="example.com"
                                    value="example.com">
                         </div>
+                        <div class="form-group">
+                            <label for="newClusterLoadBalancerIP">LoadBalancer IP Address (Optional)</label>
+                            <input type="text" id="newClusterLoadBalancerIP" name="loadBalancerIP"
+                                   placeholder="192.168.100.10"
+                                   pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$"
+                                   title="Must be a valid IPv4 address">
+                            <small>Optional - will be auto-resolved via DNS if not provided</small>
+                        </div>
                         <div class="form-actions">
                             <button type="submit" class="btn-primary">Create Cluster</button>
                             <button type="button" class="btn-secondary" onclick="toggleCreateClusterForm()">Cancel</button>
@@ -327,7 +335,7 @@
     <!-- Tooltip -->
     <div id="tooltip" class="tooltip" style="display: none;"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/static/js/vendor/chart.umd.min.js"></script>
     <script src="/static/js/app.js"></script>
     <script src="/static/js/enhanced.js"></script>
     <script src="/static/js/dashboard.js"></script>

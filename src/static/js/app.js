@@ -443,6 +443,18 @@ function createClusterCard(cluster) {
         </button>
     ` : '';
 
+    // LoadBalancer IP display (if available)
+    const loadBalancerIPDisplay = cluster.loadBalancerIP ? `
+        <div class="info-item">
+            <strong>LoadBalancer IP:</strong>
+            <div class="ip-address-container">
+                <span class="ip-address-badge" onclick="copyToClipboard('${cluster.loadBalancerIP}', 'LoadBalancer IP')" title="Click to copy">
+                    ${cluster.loadBalancerIP}
+                </span>
+            </div>
+        </div>
+    ` : '';
+
     card.innerHTML = `
         <div class="cluster-header">
             <h4>${cluster.clusterName}</h4>
@@ -455,6 +467,7 @@ function createClusterCard(cluster) {
             <div class="info-item">
                 <strong>Domain:</strong> ${cluster.domainName}
             </div>
+            ${loadBalancerIPDisplay}
             <div class="info-item">
                 <strong>Segments:</strong>
                 <div class="segments-list">
@@ -580,6 +593,7 @@ async function createCluster(event) {
     const site = document.getElementById('newClusterSite').value.trim();
     const segmentsText = document.getElementById('newClusterSegments').value.trim();
     const domainName = document.getElementById('newClusterDomain').value.trim();
+    const loadBalancerIP = document.getElementById('newClusterLoadBalancerIP').value.trim();
 
     // Parse segments (one per line)
     const segments = segmentsText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
@@ -601,6 +615,11 @@ async function createCluster(event) {
         segments: segments,
         domainName: domainName || 'example.com'
     };
+
+    // Add LoadBalancer IP if provided
+    if (loadBalancerIP) {
+        clusterData.loadBalancerIP = loadBalancerIP;
+    }
 
     console.log('[createCluster] Creating cluster with data:', clusterData);
     console.log('[createCluster] Using credentials:', adminCredentials ? 'Present' : 'Missing');

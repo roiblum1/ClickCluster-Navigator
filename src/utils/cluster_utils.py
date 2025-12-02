@@ -1,87 +1,37 @@
 """
-Utility functions for cluster operations.
+Cluster utilities - Backward compatibility wrapper.
+
+DEPRECATED: This module is kept for backward compatibility.
+Use the following instead:
+- src.utils.validators.ClusterValidator for validation
+- src.services.cluster.IPResolverService for IP resolution
+- src.services.cluster.URLGeneratorService for URL generation
 """
-from typing import Optional
-from src.config import config
-
-
-class ClusterValidator:
-    """Utility class for cluster validation."""
-
-    CLUSTER_PREFIX = "ocp4-"
-
-    @staticmethod
-    def validate_cluster_name(cluster_name: str) -> str:
-        """
-        Validate and normalize cluster name.
-        
-        Args:
-            cluster_name: The cluster name to validate
-            
-        Returns:
-            Normalized cluster name (lowercase, stripped)
-            
-        Raises:
-            ValueError: If cluster name doesn't start with 'ocp4-'
-        """
-        cluster_name_lower = cluster_name.lower().strip()
-        
-        if not cluster_name_lower.startswith(ClusterValidator.CLUSTER_PREFIX):
-            raise ValueError(
-                f"Cluster name '{cluster_name}' must start with '{ClusterValidator.CLUSTER_PREFIX}' prefix"
-            )
-        
-        return cluster_name_lower
-
-    @staticmethod
-    def is_valid_cluster_name(cluster_name: str) -> bool:
-        """
-        Check if cluster name is valid (starts with 'ocp4-').
-        
-        Args:
-            cluster_name: The cluster name to check
-            
-        Returns:
-            True if valid, False otherwise
-        """
-        try:
-            ClusterValidator.validate_cluster_name(cluster_name)
-            return True
-        except ValueError:
-            return False
+from src.utils.validators import ClusterValidator
+from src.services.cluster import IPResolverService, URLGeneratorService
 
 
 class ClusterUtils:
-    """Utility class for cluster operations."""
+    """
+    Utility class for cluster operations.
+
+    DEPRECATED: Use specific services instead.
+    """
 
     @staticmethod
-    def generate_console_url(cluster_name: str, domain_name: Optional[str] = None) -> str:
-        """
-        Generate OpenShift console URL for a cluster.
-        
-        Args:
-            cluster_name: The cluster name
-            domain_name: Optional domain name (defaults to config value)
-            
-        Returns:
-            Console URL string
-        """
-        if domain_name is None:
-            domain_name = config.default_domain
-        
-        cluster_name_lower = cluster_name.lower().strip()
-        return f"https://console-openshift-console.apps.{cluster_name_lower}.{domain_name}"
+    def generate_console_url(cluster_name: str, domain_name: str = None) -> str:
+        """Generate OpenShift console URL. Use URLGeneratorService instead."""
+        return URLGeneratorService.generate_console_url(cluster_name, domain_name)
 
     @staticmethod
     def normalize_cluster_name(cluster_name: str) -> str:
-        """
-        Normalize cluster name to lowercase and strip whitespace.
-        
-        Args:
-            cluster_name: The cluster name to normalize
-            
-        Returns:
-            Normalized cluster name
-        """
-        return cluster_name.lower().strip()
+        """Normalize cluster name. Use ClusterValidator.normalize_cluster_name instead."""
+        return ClusterValidator.normalize_cluster_name(cluster_name)
 
+    @staticmethod
+    def resolve_loadbalancer_ip(cluster_name: str, domain_name: str = None) -> str:
+        """Resolve LoadBalancer IP. Use IPResolverService instead."""
+        return IPResolverService.resolve_loadbalancer_ip(cluster_name, domain_name)
+
+
+__all__ = ["ClusterUtils", "ClusterValidator"]

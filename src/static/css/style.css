@@ -606,6 +606,7 @@ header .subtitle {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 24px;
+    align-items: stretch;
 }
 
 .cluster-card {
@@ -616,6 +617,9 @@ header .subtitle {
     transition: var(--transition);
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .cluster-card::before {
@@ -678,7 +682,10 @@ header .subtitle {
 }
 
 .cluster-info {
+    flex: 1;
     margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
 }
 
 .info-item {
@@ -711,14 +718,53 @@ header .subtitle {
     transition: var(--transition-fast);
 }
 
+/* IP Address Display - Badge Style */
+.ip-address-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.ip-address-badge {
+    background: var(--background);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.85em;
+    font-family: 'Courier New', monospace;
+    color: var(--text-primary);
+    transition: var(--transition-fast);
+    cursor: pointer;
+    user-select: none;
+    display: inline-block;
+}
+
+.ip-address-badge:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(238, 0, 0, 0.3);
+}
+
+.ip-address-badge:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(238, 0, 0, 0.2);
+}
+
 
 .cluster-actions {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
 }
 
-/* List View - Enhanced */
+/* List View - Enhanced and Better Organized */
 .clusters-list {
     display: flex;
     flex-direction: column;
@@ -727,27 +773,44 @@ header .subtitle {
 
 .cluster-card.list-item {
     padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
 }
 
 .cluster-card.list-item .cluster-header {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .cluster-card.list-item .cluster-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     margin-bottom: 16px;
 }
 
 .cluster-card.list-item .info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
     margin-bottom: 0;
 }
 
-.cluster-card.list-item .segments-list {
+.cluster-card.list-item .info-item strong {
+    min-width: 140px;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.cluster-card.list-item .segments-list,
+.cluster-card.list-item .ip-address-container {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    margin-top: 0;
 }
 
 .cluster-card.list-item .segment-badge {
@@ -755,11 +818,23 @@ header .subtitle {
     padding: 4px 10px;
 }
 
+.cluster-card.list-item .ip-address-badge {
+    font-size: 0.8em;
+    padding: 4px 10px;
+}
+
+.cluster-card.list-item .cluster-actions {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
 /* Compact View - Enhanced */
 .clusters-compact-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
+    align-items: stretch;
 }
 
 .cluster-card.compact {
@@ -782,6 +857,11 @@ header .subtitle {
 .cluster-card.compact .segment-badge {
     font-size: 0.75em;
     padding: 4px 8px;
+}
+
+.cluster-card.compact .cluster-actions {
+    padding-top: 12px;
+    margin-top: auto;
 }
 
 /* Empty State - Enhanced */

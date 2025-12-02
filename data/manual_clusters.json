@@ -9,8 +9,85 @@
       ],
       "domainName": "example.com",
       "consoleUrl": "https://console-openshift-console.apps.ocp4-manual.example.com",
-      "createdAt": "2025-11-22T21:01:15.734730"
+      "createdAt": "2025-11-22T21:01:15.734730",
+      "source": "manual",
+      "loadBalancerIP": null
+    },
+    "c284c569-ba8a-4670-a6eb-26162b1e572d": {
+      "id": "c284c569-ba8a-4670-a6eb-26162b1e572d",
+      "clusterName": "ocp4-test-lb",
+      "site": "Site1",
+      "segments": [
+        "10.10.0.0/24"
+      ],
+      "domainName": "example.com",
+      "consoleUrl": "https://console-openshift-console.apps.ocp4-test-lb.example.com",
+      "createdAt": "2025-12-02T21:36:05.653494",
+      "source": "manual",
+      "loadBalancerIP": null
+    },
+    "f07a8940-aece-4572-a3f4-81eeef2520ea": {
+      "id": "f07a8940-aece-4572-a3f4-81eeef2520ea",
+      "clusterName": "ocp4-test-with-lb",
+      "site": "Site1",
+      "segments": [
+        "10.20.0.0/24"
+      ],
+      "domainName": "example.com",
+      "consoleUrl": "https://console-openshift-console.apps.ocp4-test-with-lb.example.com",
+      "createdAt": "2025-12-02T21:36:53.838575",
+      "source": "manual",
+      "loadBalancerIP": "192.168.100.100"
+    },
+    "55a3b938-6d45-4c4e-82e5-f228fdbabc17": {
+      "id": "55a3b938-6d45-4c4e-82e5-f228fdbabc17",
+      "clusterName": "ocp4-auto-resolve",
+      "site": "Site2",
+      "segments": [
+        "10.30.0.0/24"
+      ],
+      "domainName": "example.com",
+      "consoleUrl": "https://console-openshift-console.apps.ocp4-auto-resolve.example.com",
+      "createdAt": "2025-12-02T21:37:01.995065"
+    },
+    "fb5232a3-6cbd-4d19-b936-fa16937c5838": {
+      "id": "fb5232a3-6cbd-4d19-b936-fa16937c5838",
+      "clusterName": "ocp4-bulk1",
+      "site": "Site1",
+      "segments": [
+        "10.100.0.0/24"
+      ],
+      "domainName": "example.com",
+      "consoleUrl": "https://console-openshift-console.apps.ocp4-bulk1.example.com",
+      "createdAt": "2025-12-02T21:42:17.817865",
+      "source": "manual",
+      "loadBalancerIP": "192.168.100.1"
+    },
+    "b597cf99-2cdf-446e-9d12-fecb1965dc34": {
+      "id": "b597cf99-2cdf-446e-9d12-fecb1965dc34",
+      "clusterName": "ocp4-bulk2",
+      "site": "Site2",
+      "segments": [
+        "10.101.0.0/24",
+        "10.101.1.0/24"
+      ],
+      "domainName": "example.com",
+      "consoleUrl": "https://console-openshift-console.apps.ocp4-bulk2.example.com",
+      "createdAt": "2025-12-02T21:42:17.820681",
+      "source": "manual",
+      "loadBalancerIP": "192.168.100.2"
+    },
+    "bb1560ea-4fb7-4d44-89ad-4cf67368e8f2": {
+      "id": "bb1560ea-4fb7-4d44-89ad-4cf67368e8f2",
+      "clusterName": "ocp4-bulk3",
+      "site": "Site3",
+      "segments": [
+        "10.102.0.0/24"
+      ],
+      "domainName": "example.com",
+      "consoleUrl": "https://console-openshift-console.apps.ocp4-bulk3.example.com",
+      "createdAt": "2025-12-02T21:42:17.822134"
     }
   },
-  "last_updated": "2025-11-22T21:01:15.734739"
+  "last_updated": "2025-12-02T21:42:17.822144"
 }

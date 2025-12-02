@@ -5,7 +5,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 import ipaddress
 from datetime import datetime
-from src.utils import ClusterValidator
+from src.utils.validators import ClusterValidator
 
 
 class ClusterSegment(BaseModel):
@@ -55,6 +55,10 @@ class ClusterCreate(BaseModel):
         default="example.com",
         description="Domain name for the cluster"
     )
+    loadBalancerIP: Optional[str] = Field(
+        default=None,
+        description="LoadBalancer IP address (optional, will be auto-resolved if not provided)"
+    )
 
     @field_validator('segments')
     @classmethod
@@ -79,6 +83,19 @@ class ClusterCreate(BaseModel):
         # Use ClusterValidator for prefix validation
         return ClusterValidator.validate_cluster_name(v)
 
+    @field_validator('loadBalancerIP')
+    @classmethod
+    def validate_loadbalancer_ip(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that LoadBalancer IP is a valid IPv4 address if provided."""
+        if v is None or v.strip() == "":
+            return None
+        try:
+            # Validate IPv4 address
+            ipaddress.IPv4Address(v.strip())
+            return v.strip()
+        except ValueError:
+            raise ValueError(f"Invalid IPv4 address: {v}")
+
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "clusterName": "ocp4-roi",
@@ -100,6 +117,7 @@ class ClusterResponse(BaseModel):
     consoleUrl: str = Field(..., description="OpenShift console URL")
     createdAt: datetime = Field(..., description="Creation timestamp")
     source: Optional[str] = Field(default="manual", description="Cluster source: 'vlan-manager' or 'manual'")
+    loadBalancerIP: Optional[str] = Field(default=None, description="LoadBalancer IP address (resolved from DNS)")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -112,7 +130,8 @@ class ClusterResponse(BaseModel):
                 "domainName": "example.com",
                 "consoleUrl": "https://console-openshift-console.apps.ocp4-roi.example.com",
                 "createdAt": "2025-11-13T12:00:00Z",
-                "source": "vlan-manager"
+                "source": "vlan-manager",
+                "loadBalancerIP": "192.168.100.10"
             }
         }
     )

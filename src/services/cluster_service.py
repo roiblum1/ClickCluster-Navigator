@@ -110,6 +110,10 @@ class ClusterService:
                 ),
                 "createdAt": datetime.utcnow().isoformat(),
                 "source": "vlan-manager",
+                "loadBalancerIP": ClusterUtils.resolve_loadbalancer_ip(
+                    cluster['clusterName'],
+                    domain_name
+                ),
                 "metadata": cluster.get("metadata", {})
             }
 
@@ -147,6 +151,13 @@ class ClusterService:
             # Ensure source field is set
             if "source" not in cluster:
                 cluster["source"] = "manual"
+
+            # Resolve LoadBalancer IP if not already present
+            if "loadBalancerIP" not in cluster or cluster["loadBalancerIP"] is None:
+                cluster["loadBalancerIP"] = ClusterUtils.resolve_loadbalancer_ip(
+                    cluster["clusterName"],
+                    cluster.get("domainName")
+                )
 
             processed.append(cluster)
 
@@ -203,6 +214,20 @@ class ClusterService:
 
         # Ensure source is set to manual
         cluster["source"] = "manual"
+
+        # Use provided LoadBalancer IP or auto-resolve it
+        if "loadBalancerIP" in cluster_data and cluster_data["loadBalancerIP"]:
+            cluster["loadBalancerIP"] = cluster_data["loadBalancerIP"]
+            logger.info(f"Using provided LoadBalancer IP: {cluster['loadBalancerIP']}")
+        else:
+            cluster["loadBalancerIP"] = ClusterUtils.resolve_loadbalancer_ip(
+                cluster["clusterName"],
+                cluster.get("domainName")
+            )
+            if cluster["loadBalancerIP"]:
+                logger.info(f"Auto-resolved LoadBalancer IP: {cluster['loadBalancerIP']}")
+            else:
+                logger.debug(f"LoadBalancer IP could not be resolved for {cluster['clusterName']}")
 
         logger.info(f"Created manual cluster: {cluster['clusterName']}@{cluster['site']}")
 

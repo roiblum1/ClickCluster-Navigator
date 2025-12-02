@@ -8,6 +8,11 @@
     "port": 8000,
     "default_domain": "example.com"
   },
+  "dns": {
+    "server": "8.8.8.8",
+    "timeout_seconds": 3,
+    "resolution_path": "ingress.{cluster_name}.{domain_name}"
+  },
   "auth": {
     "admin_username": "admin",
     "admin_password": "Password1"

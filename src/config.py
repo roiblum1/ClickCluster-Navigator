@@ -17,6 +17,11 @@ DEFAULT_CONFIG = {
         "port": 8000,
         "default_domain": "example.com"
     },
+    "dns": {
+        "server": "8.8.8.8",
+        "timeout_seconds": 3,
+        "resolution_path": "ingress.{cluster_name}.{domain_name}"
+    },
     "auth": {
         "admin_username": "admin",
         "admin_password": "Password1"
@@ -87,6 +92,25 @@ class Config:
     def default_domain(self) -> str:
         """Get default domain from environment or config."""
         return os.getenv("DEFAULT_DOMAIN", self._config.get("application", {}).get("default_domain", "example.com"))
+
+    @property
+    def dns_server(self) -> str:
+        """Get DNS server from environment or config."""
+        return os.getenv("DNS_SERVER", self._config.get("dns", {}).get("server", "8.8.8.8"))
+
+    @property
+    def dns_timeout(self) -> int:
+        """Get DNS timeout in seconds from environment or config."""
+        timeout_str = os.getenv("DNS_TIMEOUT", str(self._config.get("dns", {}).get("timeout_seconds", 3)))
+        try:
+            return int(timeout_str)
+        except ValueError:
+            return 3
+
+    @property
+    def dns_resolution_path(self) -> str:
+        """Get DNS resolution path template from environment or config."""
+        return os.getenv("DNS_RESOLUTION_PATH", self._config.get("dns", {}).get("resolution_path", "ingress.{cluster_name}.{domain_name}"))
 
 
 # Global config instance

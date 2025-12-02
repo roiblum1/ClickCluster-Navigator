@@ -1,237 +1,293 @@
 # OpenShift Cluster Navigator
 
-A web application for managing and navigating OpenShift clusters organized by deployment sites.
+A modern web application for managing and navigating OpenShift clusters with VLAN Manager integration, automatic DNS resolution, and comprehensive cluster management features.
 
-## Features
+## 🎯 Key Features
 
-- **Cluster Management**: Add, view, and delete OpenShift clusters
-- **Site Organization**: Clusters are automatically organized by deployment site
-- **Network Segments**: Track network segments (CIDR) for each cluster
-- **Quick Navigation**: One-click access to OpenShift console for any cluster
-- **Validation**: Built-in validation for cluster names and CIDR notation
-- **Modern UI**: Responsive design with a clean, professional interface
+- **VLAN Manager Integration**: Automatic synchronization with VLAN Manager API
+- **Manual Cluster Management**: Add, edit, and delete clusters manually
+- **LoadBalancer IP Resolution**: Automatic DNS-based IP resolution with configurable path
+- **Statistics Dashboard**: Visual analytics with charts and metrics
+- **Export Capabilities**: Export to CSV and Excel formats
+- **Site Organization**: Clusters organized by deployment site
+- **Network Segments**: Track and copy network segments (CIDR)
+- **Quick Navigation**: One-click access to OpenShift console
+- **Dark Mode**: Built-in dark mode support
+- **Multi-Replica Safe**: File locking for concurrent deployments
 
-## Architecture
+## 🚀 Quick Start
 
-```
-ClickCluster-Navigator/
-├── src/
-│   ├── api/                 # FastAPI route handlers
-│   │   ├── clusters.py      # Cluster CRUD endpoints
-│   │   └── sites.py         # Site organization endpoints
-│   ├── database/            # Data storage layer
-│   │   └── store.py         # In-memory data store
-│   ├── models/              # Pydantic models
-│   │   └── cluster.py       # Data models with validation
-│   ├── static/              # Frontend static files
-│   │   ├── css/
-│   │   │   └── style.css    # Application styles
-│   │   └── js/
-│   │       └── app.js       # Frontend JavaScript
-│   ├── templates/           # HTML templates
-│   │   └── index.html       # Main UI page
-│   └── main.py              # FastAPI application entry point
-├── requirements.txt         # Python dependencies
-├── Dockerfile               # Container configuration
-└── README.md               # This file
-```
-
-## Requirements
-
-- Python 3.11+
-- Podman (optional, for containerized deployment)
-
-## Installation & Deployment
-
-### Quick Start - Local Development
-
+### Local Development
 ```bash
 ./run.sh
 ```
 
-This will:
-- Create a virtual environment
-- Install all dependencies
-- Start the application on [http://localhost:8000](http://localhost:8000)
+Access the application at: http://localhost:8000
 
-### Quick Start - Podman Deployment
-
+### Container Deployment
 ```bash
-./run.sh podman
+podman build -t openshift-cluster-navigator:v2.0.0 .
+podman run -d --name cluster-navigator -p 8000:8000 \
+  -v $(pwd)/data:/app/data:Z \
+  openshift-cluster-navigator:v2.0.0
 ```
 
-This will:
-- Build the container image
-- Start the container with health checks
-- Expose the application on [http://localhost:8000](http://localhost:8000)
-
-### Manual Local Development
-
-1. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Run the application:
-   ```bash
-   python -m src.main
-   ```
-
-4. Open your browser to [http://localhost:8000](http://localhost:8000)
-
-### Manual Podman Deployment
-
-1. Build the image:
-   ```bash
-   podman build -t openshift-cluster-navigator .
-   ```
-
-2. Run the container:
-   ```bash
-   podman run -d \
-     --name cluster-navigator \
-     -p 8000:8000 \
-     --health-cmd='python -c "import urllib.request; urllib.request.urlopen(\"http://localhost:8000/health\")"' \
-     --health-interval=30s \
-     --health-timeout=10s \
-     --health-retries=3 \
-     openshift-cluster-navigator
-   ```
-
-3. Access the application at [http://localhost:8000](http://localhost:8000)
-
-### Accessing the Application
-
-- **UI**: [http://localhost:8000](http://localhost:8000)
-- **API Documentation**: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
-- **Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
-
-## API Documentation
-
-Once the application is running, access the interactive API documentation:
-
-- **Swagger UI**: [http://localhost:8000/api/docs](http://localhost:8000/api/docs)
-- **ReDoc**: [http://localhost:8000/api/redoc](http://localhost:8000/api/redoc)
-
-### API Endpoints
-
-#### Clusters
-
-- `POST /api/clusters` - Create a new cluster
-- `GET /api/clusters` - Get all clusters
-- `GET /api/clusters/{cluster_id}` - Get cluster by ID
-- `GET /api/clusters/name/{cluster_name}` - Get cluster by name
-- `PATCH /api/clusters/{cluster_id}` - Update cluster
-- `DELETE /api/clusters/{cluster_id}` - Delete cluster
-- `GET /api/clusters/site/{site_name}` - Get clusters by site
-
-#### Sites
-
-- `GET /api/sites` - Get all sites with their clusters
-- `GET /api/sites/{site_name}` - Get specific site with clusters
-
-### Example API Request
-
+### Kubernetes/OpenShift Deployment
 ```bash
-curl -X POST "http://localhost:8000/api/clusters" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "clusterName": "ocp4-roi",
-    "site": "site1",
-    "segments": ["192.178.1.0/24", "192.178.2.0/24"],
-    "domainName": "example.com"
-  }'
+cd helm/
+helm install cluster-navigator ./openshift-cluster-navigator -f values-production.yaml
 ```
 
-## Data Model
+## 📋 Requirements
+
+- Python 3.11+
+- Podman or Docker (for containerized deployment)
+- DNS server for LoadBalancer IP resolution
+
+## 🔧 Configuration
+
+### Config File (`config.json`)
+```json
+{
+  "vlan_manager": {
+    "url": "http://vlan-manager:9000",
+    "sync_interval_seconds": 300
+  },
+  "application": {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "default_domain": "example.com"
+  },
+  "dns": {
+    "server": "8.8.8.8",
+    "timeout_seconds": 3,
+    "resolution_path": "ingress.{cluster_name}.{domain_name}"
+  },
+  "auth": {
+    "admin_username": "admin",
+    "admin_password": "Password1"
+  }
+}
+```
+
+### Environment Variables
+- `VLAN_MANAGER_URL` - VLAN Manager API URL
+- `DEFAULT_DOMAIN` - Default domain for clusters
+- `DNS_SERVER` - DNS server for IP resolution
+- `DNS_TIMEOUT` - DNS query timeout in seconds
+- `DNS_RESOLUTION_PATH` - DNS resolution path template
+- `ADMIN_USERNAME` - Admin username
+- `ADMIN_PASSWORD` - Admin password
+- `APP_TITLE` - Application title
+
+## 📖 API Documentation
+
+### Main Endpoints
+
+#### Combined Data
+- `GET /api/sites-combined` - Get all sites with clusters from VLAN Manager + manual
+
+#### Cluster Management
+- `POST /api/clusters` - Create a manual cluster (Admin)
+- `POST /api/clusters/bulk` - Create multiple clusters (Admin)
+- `GET /api/clusters` - Get all manual clusters
+- `GET /api/clusters/{id}` - Get cluster by ID
+- `DELETE /api/clusters/{id}` - Delete manual cluster (Admin)
+
+#### Statistics & Export
+- `GET /api/statistics` - Get cluster statistics
+- `GET /api/export/csv` - Export clusters as CSV
+- `GET /api/export/excel` - Export clusters as Excel
+
+#### VLAN Sync
+- `GET /api/vlan-sync/status` - Get sync status
+- `POST /api/vlan-sync/trigger` - Trigger manual sync (Admin)
+
+### Interactive API Docs
+- Swagger UI: http://localhost:8000/api/docs
+- ReDoc: http://localhost:8000/api/redoc
+
+## 🎨 Features
+
+### VLAN Manager Integration
+- Automatic synchronization every 5 minutes
+- Read-only access (GET requests only)
+- Caches data locally for offline access
+- Manual sync trigger available
+
+### LoadBalancer IP Resolution
+- Configurable DNS server
+- Configurable resolution path template
+- Automatic resolution for all clusters
+- Manual IP entry supported
+
+### Statistics Dashboard
+- Total clusters, sites, segments
+- Clusters per site (bar chart)
+- Source distribution (doughnut chart)
+- Domain distribution (pie chart)
+- Segments per site (bar chart)
+
+### Export Features
+- CSV export with all cluster data
+- Excel export with formatting
+- Timestamped file names
+- Complete field coverage
+
+### UI Features
+- Responsive grid/list view toggle
+- Dark mode support
+- Click-to-copy for names, IPs, segments
+- Quick filter by site
+- Real-time search
+- Console URL quick access
+- Last sync time display
+
+## 🏗️ Architecture
+
+The application follows **SOLID principles** with clean layered architecture:
+
+```
+API Layer (FastAPI)
+    ↓
+Service Layer (Business Logic)
+    ↓
+Data Layer (Storage)
+    ↓
+Utils Layer (Reusable Utilities)
+```
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation.
+
+### File Structure
+```
+src/
+├── api/              # API endpoints (HTTP layer)
+├── services/         # Business logic layer
+├── database/         # Data persistence layer
+├── models/           # Pydantic models & validation
+├── utils/            # Reusable utilities
+├── static/           # Frontend assets (CSS, JS)
+├── templates/        # HTML templates
+├── config.py         # Configuration management
+├── auth.py           # Authentication
+├── exceptions.py     # Custom exceptions
+└── main.py           # Application entry point
+```
+
+## 🔐 Security
+
+- HTTP Basic Authentication for admin endpoints
+- Input validation using Pydantic
+- CIDR and IPv4 validation
+- Cluster name pattern validation (`ocp4-*`)
+- VLAN Manager clusters protected from deletion
+- Non-root user in container
+- Read-only VLAN Manager access
+
+## 📚 Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Architecture and SOLID principles
+- [CONFIGURATION.md](CONFIGURATION.md) - Configuration guide
+- [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md) - Environment variables reference
+- [REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md) - Code refactoring history
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues and solutions
+- [helm/DEPLOYMENT_GUIDE.md](helm/DEPLOYMENT_GUIDE.md) - Kubernetes deployment guide
+
+## 🧪 Testing
+
+```bash
+# Run tests
+pytest tests/
+
+# Check health
+curl http://localhost:8000/health
+```
+
+## 🐳 Docker Image
+
+Available on Docker Hub:
+```bash
+podman pull docker.io/roi12345/openshift-cluster-navigator:v2
+```
+
+## 📝 Data Model
 
 ### Cluster
-
 ```json
 {
   "clusterName": "ocp4-roi",
   "site": "site1",
   "segments": ["192.178.1.0/24", "192.178.2.0/24"],
-  "domainName": "example.com"
+  "domainName": "example.com",
+  "loadBalancerIP": "192.168.100.10",
+  "source": "manual"
 }
 ```
 
 **Validation Rules:**
-- `clusterName`: Lowercase alphanumeric with hyphens, 3-100 characters
+- `clusterName`: Must start with `ocp4-`, lowercase alphanumeric with hyphens
 - `site`: Required, 1-50 characters
-- `segments`: Array of valid CIDR notation (e.g., 192.178.1.0/24)
-- `domainName`: Optional, defaults to "example.com"
+- `segments`: Array of valid CIDR notation
+- `domainName`: Optional, defaults to configured domain
+- `loadBalancerIP`: Optional IPv4 address (auto-resolved if not provided)
 
-## Features in Detail
+## 🚢 Deployment
 
-### Pydantic Validation
-
-The application uses Pydantic for robust data validation:
-- **Cluster Name**: Validates format (lowercase, alphanumeric, hyphens)
-- **CIDR Validation**: Ensures all network segments are valid CIDR notation
-- **Type Safety**: Automatic type checking and conversion
-
-### Console URL Generation
-
-For each cluster, the application automatically generates the OpenShift console URL:
-```
-https://console-openshift-console.apps.<cluster-name>.<domain-name>
-```
-
-### Site Organization
-
-Clusters are automatically grouped by their deployment site, making it easy to navigate large deployments across multiple locations.
-
-## Development
-
-### Running Tests
-
+### Production Deployment with Helm
 ```bash
-pytest tests/
+cd helm/
+helm install cluster-navigator ./openshift-cluster-navigator \
+  -f values-production.yaml \
+  --set config.vlanManager.url=http://your-vlan-manager:9000 \
+  --set config.dns.server=your-dns-server
 ```
 
-### Code Structure
+### Environment-Specific Configuration
+```bash
+# Development
+export DEFAULT_DOMAIN="dev.example.com"
 
-- **Models** ([src/models/cluster.py](src/models/cluster.py)): Pydantic models with validation
-- **API Routes** ([src/api/](src/api/)): FastAPI endpoints organized by resource
-- **Database** ([src/database/store.py](src/database/store.py)): In-memory storage (easily replaceable with SQL)
-- **Frontend** ([src/static/](src/static/), [src/templates/](src/templates/)): HTML/CSS/JS interface
+# Production
+export DEFAULT_DOMAIN="prod.example.com"
+export DNS_SERVER="10.0.0.1"
+export DNS_RESOLUTION_PATH="api.{cluster_name}.{domain_name}"
+```
 
-### Extending the Application
+## 🔄 Version History
 
-To add a database backend (e.g., PostgreSQL):
+### v2.0.0
+- ✅ Added configurable DNS resolution path
+- ✅ LoadBalancer IP badge color matching
+- ✅ Bulk cluster creation endpoint
+- ✅ Improved list view organization
 
-1. Install SQLAlchemy:
-   ```bash
-   pip install sqlalchemy psycopg2-binary
-   ```
+### v1.0.0
+- ✅ VLAN Manager integration
+- ✅ Manual cluster management
+- ✅ Statistics dashboard
+- ✅ CSV/Excel export
+- ✅ Dark mode support
+- ✅ Multi-replica safety
 
-2. Replace [src/database/store.py](src/database/store.py) with SQLAlchemy models and sessions
+## 🤝 Contributing
 
-3. Update the API routes to use database sessions
+Contributions welcome! Please ensure:
+- Code follows SOLID principles
+- Pydantic models include validation
+- API endpoints have proper error handling
+- Frontend is responsive and accessible
+- Tests are included for new features
 
-## Security Considerations
-
-- Input validation using Pydantic
-- XSS protection with HTML escaping
-- CORS configuration (update for production)
-- Non-root user in Docker container
-- Health checks for monitoring
-
-## License
+## 📄 License
 
 MIT License
 
-## Contributing
+## 🙏 Acknowledgments
 
-Contributions are welcome! Please ensure:
-- Code follows the existing structure
-- Pydantic models include proper validation
-- API endpoints include proper error handling
-- Frontend is responsive and accessible
+Built with:
+- FastAPI - Modern web framework
+- Pydantic - Data validation
+- Chart.js - Data visualization
+- dnspython - DNS resolution
+- pandas - Data export
