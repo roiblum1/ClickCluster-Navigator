@@ -4,7 +4,7 @@ API routes for cluster management (Read-only - data fetched from VLAN Manager).
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from src.models import ClusterResponse, ClusterCreate
-from src.services.cluster_service import cluster_service
+from src.services.cluster import cluster_service
 from src.auth import get_current_admin
 from src.exceptions import (
     ClusterNotFoundError,

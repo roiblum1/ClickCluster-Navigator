@@ -8,7 +8,6 @@ Use the following instead:
 - src.services.cluster.URLGeneratorService for URL generation
 """
 from src.utils.validators import ClusterValidator
-from src.services.cluster import IPResolverService, URLGeneratorService
 
 
 class ClusterUtils:
@@ -21,6 +20,8 @@ class ClusterUtils:
     @staticmethod
     def generate_console_url(cluster_name: str, domain_name: str = None) -> str:
         """Generate OpenShift console URL. Use URLGeneratorService instead."""
+        # Lazy import to avoid circular dependency
+        from src.services.cluster import URLGeneratorService
         return URLGeneratorService.generate_console_url(cluster_name, domain_name)
 
     @staticmethod
@@ -31,6 +32,8 @@ class ClusterUtils:
     @staticmethod
     def resolve_loadbalancer_ip(cluster_name: str, domain_name: str = None) -> str:
         """Resolve LoadBalancer IP. Use IPResolverService instead."""
+        # Lazy import to avoid circular dependency
+        from src.services.cluster import IPResolverService
         return IPResolverService.resolve_loadbalancer_ip(cluster_name, domain_name)
 
 

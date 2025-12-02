@@ -4,7 +4,7 @@ Combined API endpoint that merges VLAN Manager data with manual clusters.
 from fastapi import APIRouter
 from typing import List
 from src.models import SiteResponse
-from src.services.cluster_service import cluster_service
+from src.services.cluster import cluster_service
 
 router = APIRouter(prefix="/api", tags=["combined"])
 
