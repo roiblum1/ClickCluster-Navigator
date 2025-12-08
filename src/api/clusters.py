@@ -1,6 +1,7 @@
 """
 API routes for cluster management (Read-only - data fetched from VLAN Manager).
 """
+import logging
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from src.models import ClusterResponse, ClusterCreate
@@ -12,6 +13,7 @@ from src.exceptions import (
     VLANManagerClusterProtectedError
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/clusters", tags=["clusters"])
 
 
@@ -68,9 +70,13 @@ async def create_cluster(cluster_data: ClusterCreate) -> ClusterResponse:
     - **segments**: List of network segments in CIDR notation
     - **domainName**: Optional domain name (defaults to config value)
     """
+    logger.info(f"Creating cluster: {cluster_data.clusterName} at site: {cluster_data.site}")
+    logger.debug(f"Cluster data: {cluster_data.dict()}")
+
     try:
         # Check if cluster already exists (same name and site)
         if cluster_service.cluster_exists(cluster_data.clusterName, cluster_data.site):
+            logger.warning(f"Cluster already exists: {cluster_data.clusterName} at {cluster_data.site}")
             raise ClusterAlreadyExistsError(cluster_data.clusterName, cluster_data.site)
 
         # Create cluster using service layer
@@ -83,6 +89,7 @@ async def create_cluster(cluster_data: ClusterCreate) -> ClusterResponse:
         }
 
         cluster = cluster_service.create_manual_cluster(cluster_dict)
+        logger.info(f"Successfully created cluster: {cluster_data.clusterName} with ID: {cluster['id']}")
 
         return ClusterResponse(**cluster)
 
@@ -114,6 +121,8 @@ async def create_clusters_bulk(clusters_data: List[ClusterCreate]):
 
     Returns summary of created clusters and any errors encountered.
     """
+    logger.info(f"Bulk creating {len(clusters_data)} clusters")
+
     results = {
         "success": [],
         "failed": [],
@@ -123,6 +132,7 @@ async def create_clusters_bulk(clusters_data: List[ClusterCreate]):
     }
 
     for cluster_data in clusters_data:
+        logger.debug(f"Processing cluster: {cluster_data.clusterName} at {cluster_data.site}")
         try:
             # Check if cluster already exists
             if cluster_service.cluster_exists(cluster_data.clusterName, cluster_data.site):

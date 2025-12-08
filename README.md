@@ -5,10 +5,13 @@ A modern web application for managing and navigating OpenShift clusters with VLA
 ## 🎯 Key Features
 
 - **VLAN Manager Integration**: Automatic synchronization with VLAN Manager API
+- **DNS Resolution API**: Query and validate DNS records for clusters
 - **Manual Cluster Management**: Add, edit, and delete clusters manually
 - **LoadBalancer IP Resolution**: Automatic DNS-based IP resolution with configurable path
 - **Statistics Dashboard**: Visual analytics with charts and metrics
 - **Export Capabilities**: Export to CSV and Excel formats
+- **Comprehensive Logging**: Structured logging with environment-based log levels
+- **Performance Optimized**: Minimal overhead, efficient data processing
 - **Site Organization**: Clusters organized by deployment site
 - **Network Segments**: Track and copy network segments (CIDR)
 - **Quick Navigation**: One-click access to OpenShift console
@@ -71,6 +74,8 @@ helm install cluster-navigator ./openshift-cluster-navigator -f values-productio
 ```
 
 ### Environment Variables
+
+- `LOG_LEVEL` - Logging level (DEBUG, INFO, WARNING, ERROR) - default: INFO
 - `VLAN_MANAGER_URL` - VLAN Manager API URL
 - `DEFAULT_DOMAIN` - Default domain for clusters
 - `DNS_SERVER` - DNS server for IP resolution
@@ -79,6 +84,14 @@ helm install cluster-navigator ./openshift-cluster-navigator -f values-productio
 - `ADMIN_USERNAME` - Admin username
 - `ADMIN_PASSWORD` - Admin password
 - `APP_TITLE` - Application title
+
+**Example:**
+
+```bash
+export LOG_LEVEL=DEBUG
+export VLAN_MANAGER_URL=http://vlan-manager:9000
+export DNS_SERVER=8.8.8.8
+```
 
 ## 📖 API Documentation
 
@@ -100,8 +113,14 @@ helm install cluster-navigator ./openshift-cluster-navigator -f values-productio
 - `GET /api/export/excel` - Export clusters as Excel
 
 #### VLAN Sync
+
 - `GET /api/vlan-sync/status` - Get sync status
-- `POST /api/vlan-sync/trigger` - Trigger manual sync (Admin)
+- `POST /api/vlan-sync/sync` - Trigger manual sync (Admin)
+
+#### DNS Resolution
+
+- `POST /api/dns/resolve` - Resolve cluster LoadBalancer IP via DNS
+- `POST /api/dns/resolve/batch` - Batch resolve multiple clusters
 
 ### Interactive API Docs
 - Swagger UI: http://localhost:8000/api/docs
@@ -190,7 +209,10 @@ src/
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Architecture and SOLID principles
 - [CONFIGURATION.md](CONFIGURATION.md) - Configuration guide
 - [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md) - Environment variables reference
-- [REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md) - Code refactoring history
+- [LOGGING.md](LOGGING.md) - Comprehensive logging system documentation
+- [LOGGING_USAGE.md](LOGGING_USAGE.md) - Logging usage guide with examples
+- [DNS_ANALYSIS.md](DNS_ANALYSIS.md) - DNS resolution analysis and implementation
+- [REFACTORING_V3_COMPLETE.md](REFACTORING_V3_COMPLETE.md) - Latest refactoring details
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues and solutions
 - [helm/DEPLOYMENT_GUIDE.md](helm/DEPLOYMENT_GUIDE.md) - Kubernetes deployment guide
 
@@ -256,13 +278,26 @@ export DNS_RESOLUTION_PATH="api.{cluster_name}.{domain_name}"
 
 ## 🔄 Version History
 
+### v2.1.0 (Latest)
+
+- ✅ Comprehensive logging system with environment-based log levels
+- ✅ Performance optimizations (removed excessive console logging, improved data cloning)
+- ✅ Frontend structured logger with color-coded output
+- ✅ HTTP request/response logging middleware
+- ✅ DNS resolution API endpoints
+- ✅ Enhanced debug logging throughout backend
+- ✅ Log rotation and file management
+- ✅ Chart.js bundled for air-gapped environments
+
 ### v2.0.0
+
 - ✅ Added configurable DNS resolution path
 - ✅ LoadBalancer IP badge color matching
 - ✅ Bulk cluster creation endpoint
 - ✅ Improved list view organization
 
 ### v1.0.0
+
 - ✅ VLAN Manager integration
 - ✅ Manual cluster management
 - ✅ Statistics dashboard

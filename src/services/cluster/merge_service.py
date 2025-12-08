@@ -5,6 +5,7 @@ Handles merging clusters from different sources with precedence rules.
 from typing import List, Dict
 from src.services import vlan_sync_service
 from src.services.cluster.processor_service import ClusterProcessorService
+from src.services.cluster.ip_resolver_service import IPResolverService
 from src.utils import SiteUtils
 import logging
 
@@ -30,12 +31,18 @@ class ClusterMergeService:
         Returns:
             List of SiteResponse objects with clusters
         """
+        # Reset DNS stats at the start of processing
+        IPResolverService.reset_dns_stats()
+        logger.info("Starting cluster processing and DNS resolution...")
+
         # Get VLAN Manager synced data
         vlan_data = self.vlan_service.load_from_cache()
+        logger.debug(f"Loaded VLAN data: {len(vlan_data.get('clusters', [])) if vlan_data else 0} clusters")
 
         # Get manual clusters from in-memory store
         from src.database import cluster_store
         manual_clusters = cluster_store.get_all_clusters()
+        logger.debug(f"Loaded manual clusters: {len(manual_clusters)} clusters")
 
         # Prepare combined data structure
         sites_dict = {}
@@ -43,6 +50,7 @@ class ClusterMergeService:
         # Add VLAN Manager clusters first (they take precedence)
         if vlan_data:
             vlan_clusters = self.processor.process_vlan_clusters(vlan_data.get("clusters", []))
+            logger.debug(f"Processed {len(vlan_clusters)} VLAN clusters")
             for cluster in vlan_clusters:
                 site_name = cluster["site"]
 
@@ -52,16 +60,20 @@ class ClusterMergeService:
                         "clusters": [],
                         "clusterCount": 0
                     }
+                    logger.debug(f"Created new site entry: {site_name}")
 
                 sites_dict[site_name]["clusters"].append(cluster)
                 sites_dict[site_name]["clusterCount"] += 1
+                logger.debug(f"Added VLAN cluster '{cluster['clusterName']}' to site '{site_name}'")
 
         # Add manual clusters (skip duplicates from VLAN Manager)
         vlan_cluster_keys = self._get_vlan_cluster_keys(vlan_data)
+        logger.debug(f"VLAN cluster keys for deduplication: {vlan_cluster_keys}")
         manual_clusters_processed = self.processor.process_manual_clusters(
             manual_clusters,
             vlan_cluster_keys
         )
+        logger.debug(f"Processed {len(manual_clusters_processed)} manual clusters (after deduplication)")
 
         for cluster in manual_clusters_processed:
             site_name = cluster["site"]
@@ -72,9 +84,21 @@ class ClusterMergeService:
                     "clusters": [],
                     "clusterCount": 0
                 }
+                logger.debug(f"Created new site entry for manual cluster: {site_name}")
 
             sites_dict[site_name]["clusters"].append(cluster)
             sites_dict[site_name]["clusterCount"] += 1
+            logger.debug(f"Added manual cluster '{cluster['clusterName']}' to site '{site_name}'")
+
+        # Log DNS resolution statistics at INFO level after all processing
+        dns_stats = IPResolverService.get_dns_stats()
+        avg_time_msg = f", average time: {dns_stats['average_time_seconds']}s per request" if dns_stats['request_count'] > 0 else ""
+        logger.info(
+            f"Cluster processing completed - DNS resolution stats: "
+            f"{dns_stats['request_count']} DNS requests, "
+            f"{dns_stats['success_count']} successful, {dns_stats['failure_count']} failed, "
+            f"total time: {dns_stats['total_time_seconds']}s{avg_time_msg}"
+        )
 
         # Convert to SiteResponse objects
         sites_response = [

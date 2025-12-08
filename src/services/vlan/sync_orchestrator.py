@@ -62,6 +62,31 @@ class VLANSyncOrchestrator:
         # Transform segments to clusters
         clusters = self.transformer.transform_segments_to_clusters(segments)
 
+        # Lazy import to avoid circular dependency
+        from src.services.cluster.ip_resolver_service import IPResolverService
+        from src.utils import ClusterUtils
+
+        # Reset DNS stats before resolving IPs
+        IPResolverService.reset_dns_stats()
+        logger.info("Starting DNS resolution for clusters...")
+
+        # Resolve LoadBalancer IPs for all clusters
+        for cluster in clusters:
+            domain_name = cluster.get("domainName", config.default_domain)
+            cluster["loadBalancerIP"] = ClusterUtils.resolve_loadbalancer_ip(
+                cluster["clusterName"],
+                domain_name
+            )
+
+        # Log DNS resolution statistics at INFO level
+        dns_stats = IPResolverService.get_dns_stats()
+        avg_time_msg = f", average time: {dns_stats['average_time_seconds']}s per request" if dns_stats['request_count'] > 0 else ""
+        logger.info(
+            f"DNS resolution completed - {dns_stats['request_count']} DNS requests, "
+            f"{dns_stats['success_count']} successful, {dns_stats['failure_count']} failed, "
+            f"total time: {dns_stats['total_time_seconds']}s{avg_time_msg}"
+        )
+
         # Calculate statistics
         stats = self.transformer.calculate_stats(clusters, sites)
 

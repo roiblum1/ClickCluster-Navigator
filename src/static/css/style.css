@@ -461,7 +461,7 @@ header .subtitle {
     align-items: center;
 }
 
-.search-box svg {
+.search-box .search-icon {
     position: absolute;
     left: 16px;
     color: var(--text-secondary);
@@ -1715,4 +1715,3 @@ body.dark-mode .header-logo:hover {
 .dark-mode .create-cluster-form:hover {
     border-color: var(--primary-color);
 }
-

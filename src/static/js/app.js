@@ -10,13 +10,18 @@ let allSites = [];
 let allClusters = [];
 let currentViewMode = 'grouped';
 
+// Get logger instance
+const logger = window.loggers ? window.loggers.app : console;
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
+    logger.info('Application initializing...');
     loadClusters();
     setupEventListeners();
     initializeDarkMode();
     checkAdminSession();
     loadSyncStatus();
+    logger.info('Application initialized successfully');
 });
 
 // Set up event listeners
@@ -244,6 +249,7 @@ async function loadSyncStatus() {
 
 // Load and display all clusters organized by site
 async function loadClusters() {
+    const startTime = performance.now();
     const loadingSpinner = document.getElementById('loadingSpinner');
     const clustersContainer = document.getElementById('clustersContainer');
     const emptyState = document.getElementById('emptyState');
@@ -254,20 +260,23 @@ async function loadClusters() {
     emptyState.style.display = 'none';
 
     try {
-        console.log('[loadClusters] Fetching data from:', `${API_BASE_URL}/sites-combined`);
+        logger.info('Fetching clusters data...');
         const response = await fetch(`${API_BASE_URL}/sites-combined`);
 
         if (!response.ok) {
-            throw new Error('Failed to fetch clusters');
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const sites = await response.json();
-        console.log('[loadClusters] Received sites data:', JSON.stringify(sites, null, 2));
+        const duration = performance.now() - startTime;
+
+        logger.info(`Loaded ${sites.length} sites in ${duration.toFixed(2)}ms`);
 
         // Hide loading spinner
         loadingSpinner.classList.add('hidden');
 
         if (sites.length === 0) {
+            logger.warn('No sites found');
             emptyState.style.display = 'block';
             return;
         }
@@ -279,10 +288,7 @@ async function loadClusters() {
         allSites = sites;
         allClusters = sites.flatMap(site => site.clusters);
 
-        console.log('[loadClusters] Total clusters extracted:', allClusters.length);
-        allClusters.forEach((cluster, idx) => {
-            console.log(`[loadClusters] Cluster ${idx + 1}: name="${cluster.clusterName}", site="${cluster.site}", source="${cluster.source}"`);
-        });
+        logger.info(`Total clusters: ${allClusters.length}`);
 
         // Populate site filter dropdown
         populateSiteFilter(sites);
@@ -294,7 +300,7 @@ async function loadClusters() {
         updateStats(sites);
 
     } catch (error) {
-        console.error('[loadClusters] Error:', error);
+        logger.error('Failed to load clusters:', error);
         loadingSpinner.classList.add('hidden');
         clustersContainer.innerHTML = `<p class="error-message">Error loading clusters: ${error.message}</p>`;
     }
@@ -325,7 +331,8 @@ function filterClusters() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const siteFilter = document.getElementById('siteFilter').value;
 
-    let filteredSites = JSON.parse(JSON.stringify(allSites));
+    // Shallow copy instead of deep clone for better performance
+    let filteredSites = allSites.map(site => ({ ...site, clusters: [...site.clusters] }));
 
     // Filter by site
     if (siteFilter) {
@@ -418,16 +425,9 @@ function createClusterCard(cluster) {
     const card = document.createElement('div');
     card.className = 'cluster-card';
 
-    console.log(`[createClusterCard] Creating card for "${cluster.clusterName}"`);
-    console.log(`[createClusterCard] Cluster object:`, JSON.stringify(cluster, null, 2));
-    console.log(`[createClusterCard] cluster.source value: "${cluster.source}" (type: ${typeof cluster.source})`);
-    console.log(`[createClusterCard] Comparison result: cluster.source === 'vlan-manager' is ${cluster.source === 'vlan-manager'}`);
-
     const sourceIndicator = cluster.source === 'vlan-manager' ?
         '<span class="source-badge vlan">VLAN Manager</span>' :
         '<span class="source-badge manual">Manual</span>';
-
-    console.log(`[createClusterCard] Generated badge HTML: ${sourceIndicator}`);
 
     // Add delete button for manual clusters if admin is logged in
     const isManual = cluster.source === 'manual';
@@ -580,7 +580,6 @@ async function createCluster(event) {
     event.preventDefault();
 
     const form = event.target;
-    const messageElement = document.getElementById('createClusterMessage');
 
     // Check if admin is logged in
     if (!adminCredentials) {
@@ -621,19 +620,6 @@ async function createCluster(event) {
         clusterData.loadBalancerIP = loadBalancerIP;
     }
 
-    console.log('[createCluster] Creating cluster with data:', clusterData);
-    console.log('[createCluster] Using credentials:', adminCredentials ? 'Present' : 'Missing');
-    console.log('[createCluster] Admin credentials (base64):', adminCredentials);
-
-    // Try to decode and show what username/password we're sending (for debugging)
-    if (adminCredentials) {
-        try {
-            const decoded = atob(adminCredentials);
-            console.log('[createCluster] Decoded credentials:', decoded);
-        } catch (e) {
-            console.error('[createCluster] Failed to decode credentials:', e);
-        }
-    }
 
     // Disable submit button
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -642,23 +628,17 @@ async function createCluster(event) {
     submitBtn.textContent = 'Creating...';
 
     try {
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Basic ${adminCredentials}`
-        };
-        console.log('[createCluster] Request headers:', headers);
-
         const response = await fetch(`${API_BASE_URL}/clusters`, {
             method: 'POST',
-            headers: headers,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${adminCredentials}`
+            },
             body: JSON.stringify(clusterData)
         });
 
-        console.log('[createCluster] Response status:', response.status);
-
         if (response.ok) {
-            const result = await response.json();
-            console.log('[createCluster] Cluster created:', result);
+            await response.json();
             showClusterMessage(`Cluster "${clusterName}" created successfully!`, 'success');
 
             // Reset form
@@ -671,11 +651,9 @@ async function createCluster(event) {
             }, 1500);
         } else {
             const error = await response.json();
-            console.error('[createCluster] Error response:', error);
             showClusterMessage(error.detail || 'Failed to create cluster', 'error');
         }
     } catch (error) {
-        console.error('[createCluster] Exception:', error);
         showClusterMessage(`Error: ${error.message}`, 'error');
     } finally {
         submitBtn.disabled = false;
@@ -709,8 +687,6 @@ async function deleteCluster(clusterId, clusterName, event) {
         return;
     }
 
-    console.log(`[deleteCluster] Deleting cluster: ${clusterName} (ID: ${clusterId})`);
-
     if (!adminCredentials) {
         alert('You must be logged in as admin to delete clusters');
         return;
@@ -724,10 +700,7 @@ async function deleteCluster(clusterId, clusterName, event) {
             }
         });
 
-        console.log(`[deleteCluster] Response status: ${response.status}`);
-
         if (response.status === 204 || response.ok) {
-            console.log(`[deleteCluster] Cluster deleted successfully`);
             // Reload clusters to reflect changes
             loadClusters();
         } else if (response.status === 403) {
@@ -740,7 +713,6 @@ async function deleteCluster(clusterId, clusterName, event) {
             alert(error.detail || 'Failed to delete cluster');
         }
     } catch (error) {
-        console.error('[deleteCluster] Error:', error);
         alert(`Error deleting cluster: ${error.message}`);
     }
 }

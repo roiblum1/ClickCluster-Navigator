@@ -270,7 +270,7 @@
                 <!-- Search and Filter Controls -->
                 <div class="filter-controls">
                     <div class="search-box">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
                         </svg>
@@ -323,11 +323,13 @@
 
         <footer>
             <p>
-                <strong>Red Bull Racing × OpenShift</strong> - Cluster Navigator v1.0.0
+                <strong>Redbull x ClickCluster</strong> - Cluster Navigator v1.0.0
                 <br>
                 Data synced from VLAN Manager
                 <br>
                 <small>Keyboard shortcuts: Ctrl+K (Search), Ctrl+D (Dark Mode), Ctrl+R (Refresh)</small>
+                <br>
+                <small>Credit: Roi Blum</small>
             </p>
         </footer>
     </div>
@@ -336,6 +338,7 @@
     <div id="tooltip" class="tooltip" style="display: none;"></div>
 
     <script src="/static/js/vendor/chart.umd.min.js"></script>
+    <script src="/static/js/logger.js"></script>
     <script src="/static/js/app.js"></script>
     <script src="/static/js/enhanced.js"></script>
     <script src="/static/js/dashboard.js"></script>

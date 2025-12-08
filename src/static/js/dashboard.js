@@ -1,5 +1,8 @@
 // Statistics Dashboard JavaScript
 
+// Get logger instance
+const dashboardLogger = window.loggers ? window.loggers.dashboard : console;
+
 let dashboardCharts = {};
 let currentView = 'dashboard';
 let currentLayout = 'grid';
@@ -31,13 +34,18 @@ function toggleDashboard() {
 // Load and display statistics
 async function loadStatistics() {
     const API_BASE_URL = '/api';
+    const startTime = performance.now();
+
     try {
+        dashboardLogger.info('Loading statistics...');
         const response = await fetch(`${API_BASE_URL}/statistics`);
         if (!response.ok) {
-            throw new Error('Failed to fetch statistics');
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const stats = await response.json();
+        const duration = performance.now() - startTime;
+        dashboardLogger.info(`Statistics loaded in ${duration.toFixed(2)}ms`);
         
         // Update overview cards
         document.getElementById('statTotalClusters').textContent = stats.overview.total_clusters;
@@ -50,9 +58,9 @@ async function loadStatistics() {
         renderSourceDistributionChart(stats.source_distribution);
         renderDomainDistributionChart(stats.domain_distribution);
         renderSegmentsPerSiteChart(stats.segments_per_site);
-        
+
     } catch (error) {
-        console.error('Failed to load statistics:', error);
+        dashboardLogger.error('Failed to load statistics:', error);
         if (typeof showToast === 'function') {
             showToast('Failed to load statistics', 'error');
         }

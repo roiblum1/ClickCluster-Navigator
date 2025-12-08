@@ -129,8 +129,8 @@ function showSyncIndicator(show = true) {
     }
 }
 
-// Update search input to show clear button
-setTimeout(() => {
+// Update search input to show clear button (when DOM is ready)
+document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -140,7 +140,7 @@ setTimeout(() => {
             }
         });
     }
-}, 500);
+});
 
 // Add copy functionality to cluster cards
 // Use event delegation to handle dynamically created elements
@@ -169,20 +169,20 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Auto-refresh sync status
+// Auto-refresh sync status - only every 5 minutes to reduce overhead
 setInterval(() => {
     if (typeof loadSyncStatus === 'function') {
         loadSyncStatus();
     }
-}, 60000); // Check every minute
+}, 300000); // Check every 5 minutes
 
 // Welcome message
-setTimeout(() => {
+document.addEventListener('DOMContentLoaded', () => {
     if (!sessionStorage.getItem('welcomeShown')) {
         showToast('Welcome to OpenShift Cluster Navigator!', 'info', 4000);
         sessionStorage.setItem('welcomeShown', 'true');
     }
-}, 1000);
+});
 
 // Console welcome message
 console.log('%c🚀 OpenShift Cluster Navigator', 'font-size: 20px; font-weight: bold; color: #ee0000;');

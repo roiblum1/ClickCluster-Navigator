@@ -1,6 +1,7 @@
 """
 Main FastAPI application for OpenShift Cluster Navigator.
 """
+import logging
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -8,21 +9,39 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from contextlib import asynccontextmanager
-from src.api import clusters_router, sites_router, vlan_sync_router, combined_router, statistics_router, export_router
+from src.api import clusters_router, sites_router, vlan_sync_router, combined_router, statistics_router, export_router, dns_router
 from src.services import vlan_sync_service
 from src.config import config
+from src.utils.logging_config import setup_logging
+from src.middleware import LoggingMiddleware
+
+# Setup logging - read from environment or default to INFO
+import os
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+setup_logging(
+    log_level=log_level,
+    log_file="app.log",
+    log_dir=Path("logs")
+)
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
+    logger.info("Application starting up...")
     # Startup: Start VLAN sync service
     await vlan_sync_service.start()
+    logger.info("VLAN sync service started")
     # Perform initial sync
     await vlan_sync_service.sync_data()
+    logger.info("Initial data sync completed")
     yield
     # Shutdown: Stop VLAN sync service
+    logger.info("Application shutting down...")
     vlan_sync_service.stop()
+    logger.info("VLAN sync service stopped")
 
 # Create FastAPI app
 app = FastAPI(
@@ -33,6 +52,9 @@ app = FastAPI(
     redoc_url="/api/redoc",
     lifespan=lifespan
 )
+
+# Add logging middleware
+app.add_middleware(LoggingMiddleware)
 
 # Configure CORS
 app.add_middleware(
@@ -50,6 +72,7 @@ app.include_router(vlan_sync_router)
 app.include_router(combined_router)
 app.include_router(statistics_router)
 app.include_router(export_router)
+app.include_router(dns_router)
 
 # Mount static files
 static_path = Path(__file__).parent / "static"
@@ -72,9 +95,20 @@ async def root(request: Request):
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
+    logger.debug("Health check requested")
     return {
         "status": "healthy",
         "service": "openshift-cluster-navigator"
+    }
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler for unhandled errors."""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return {
+        "detail": "Internal server error",
+        "path": str(request.url.path)
     }
 
 
