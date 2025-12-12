@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from contextlib import asynccontextmanager
-from src.api import clusters_router, sites_router, vlan_sync_router, combined_router, statistics_router, export_router, dns_router
+from src.api.routes import router as api_router
 from src.services import vlan_sync_service
 from src.config import config
 from src.utils.logging_config import setup_logging
@@ -65,14 +65,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(clusters_router)
-app.include_router(sites_router)
-app.include_router(vlan_sync_router)
-app.include_router(combined_router)
-app.include_router(statistics_router)
-app.include_router(export_router)
-app.include_router(dns_router)
+# Include API router
+app.include_router(api_router)
 
 # Mount static files
 static_path = Path(__file__).parent / "static"

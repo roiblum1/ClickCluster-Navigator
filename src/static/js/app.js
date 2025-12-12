@@ -443,17 +443,32 @@ function createClusterCard(cluster) {
         </button>
     ` : '';
 
-    // LoadBalancer IP display (if available)
-    const loadBalancerIPDisplay = cluster.loadBalancerIP ? `
-        <div class="info-item">
-            <strong>LoadBalancer IP:</strong>
-            <div class="ip-address-container">
-                <span class="ip-address-badge" onclick="copyToClipboard('${cluster.loadBalancerIP}', 'LoadBalancer IP')" title="Click to copy">
-                    ${cluster.loadBalancerIP}
-                </span>
-            </div>
-        </div>
-    ` : '';
+    // LoadBalancer IP display (if available) - supports multiple IPs
+    let loadBalancerIPDisplay = '';
+    if (cluster.loadBalancerIP) {
+        // Handle both array and single string (backward compatibility)
+        const ipList = Array.isArray(cluster.loadBalancerIP) 
+            ? cluster.loadBalancerIP 
+            : (cluster.loadBalancerIP ? [cluster.loadBalancerIP] : []);
+        
+        if (ipList.length > 0) {
+            const ipBadges = ipList.map(ip => 
+                `<span class="ip-address-badge" onclick="copyToClipboard('${ip}', 'LoadBalancer IP')" title="Click to copy">
+                    ${ip}
+                </span>`
+            ).join('');
+            
+            const labelText = ipList.length === 1 ? 'LoadBalancer IP:' : `LoadBalancer IPs (${ipList.length}):`;
+            loadBalancerIPDisplay = `
+                <div class="info-item">
+                    <strong>${labelText}</strong>
+                    <div class="ip-address-container">
+                        ${ipBadges}
+                    </div>
+                </div>
+            `;
+        }
+    }
 
     card.innerHTML = `
         <div class="cluster-header">

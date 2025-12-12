@@ -176,7 +176,7 @@ Data Layer (Storage)
 Utils Layer (Reusable Utilities)
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed architecture documentation.
 
 ### File Structure
 ```
@@ -206,14 +206,10 @@ src/
 
 ## 📚 Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Architecture and SOLID principles
-- [CONFIGURATION.md](CONFIGURATION.md) - Configuration guide
-- [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md) - Environment variables reference
-- [LOGGING.md](LOGGING.md) - Comprehensive logging system documentation
-- [LOGGING_USAGE.md](LOGGING_USAGE.md) - Logging usage guide with examples
-- [DNS_ANALYSIS.md](DNS_ANALYSIS.md) - DNS resolution analysis and implementation
-- [REFACTORING_V3_COMPLETE.md](REFACTORING_V3_COMPLETE.md) - Latest refactoring details
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues and solutions
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Architecture and SOLID principles
+- [docs/CONFIGURATION.md](docs/CONFIGURATION.md) - Configuration guide
+- [docs/CODE_REVIEW.md](docs/CODE_REVIEW.md) - Code structure and improvements
+- [docs/TROUBLESHOOTING_GUIDE.md](docs/TROUBLESHOOTING_GUIDE.md) - Common issues and solutions
 - [helm/DEPLOYMENT_GUIDE.md](helm/DEPLOYMENT_GUIDE.md) - Kubernetes deployment guide
 
 ## 🧪 Testing

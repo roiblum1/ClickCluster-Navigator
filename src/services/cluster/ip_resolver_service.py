@@ -1,8 +1,9 @@
 """
 LoadBalancer IP resolution service.
 Resolves cluster LoadBalancer IP addresses via DNS.
+Supports multiple IPs for DNS round-robin load balancing.
 """
-from typing import Optional
+from typing import Optional, List
 import logging
 import time
 import dns.resolver
@@ -58,17 +59,20 @@ class IPResolverService:
         _dns_stats.reset()
 
     @staticmethod
-    def resolve_loadbalancer_ip(cluster_name: str, domain_name: Optional[str] = None, track_stats: bool = True) -> Optional[str]:
+    def resolve_loadbalancer_ip(cluster_name: str, domain_name: Optional[str] = None, track_stats: bool = True) -> Optional[List[str]]:
         """
-        Resolve LoadBalancer IP address by performing DNS lookup.
+        Resolve LoadBalancer IP addresses by performing DNS lookup.
         Uses the configured DNS server and resolution path template.
+        Returns all A records for DNS round-robin load balancing support.
 
         Args:
             cluster_name: The cluster name
             domain_name: Optional domain name (defaults to config value)
+            track_stats: Whether to track DNS statistics
 
         Returns:
-            IP address string or None if resolution fails
+            List of IP address strings, or None if resolution fails.
+            Returns empty list if no IPs found (but DNS query succeeded).
         """
         if domain_name is None:
             domain_name = config.default_domain
@@ -101,17 +105,28 @@ class IPResolverService:
             # Perform DNS lookup for A record
             logger.debug(f"Querying DNS A record for hostname: {hostname}")
             answers = resolver.resolve(hostname, 'A')
-            logger.info(f"Query DNS address for hostname: {hostname}" )
+            logger.info(f"Query DNS address for hostname: {hostname}")
+            
             if answers:
-                ip_address = str(answers[0])
+                # Collect all A records for round-robin support
+                ip_addresses = [str(answer) for answer in answers]
                 success = True
                 if track_stats:
                     _dns_stats.success_count += 1
-                logger.info(
-                    f"✓ DNS Resolved: {hostname} → {ip_address} "
-                    f"(server: {config.dns_server})"
-                )
-                return ip_address
+                
+                ip_count = len(ip_addresses)
+                if ip_count == 1:
+                    logger.info(
+                        f"✓ DNS Resolved: {hostname} → {ip_addresses[0]} "
+                        f"(server: {config.dns_server})"
+                    )
+                else:
+                    logger.info(
+                        f"✓ DNS Resolved: {hostname} → {ip_count} IPs "
+                        f"({', '.join(ip_addresses)}) "
+                        f"(server: {config.dns_server}, round-robin)"
+                    )
+                return ip_addresses
             else:
                 if track_stats:
                     _dns_stats.failure_count += 1

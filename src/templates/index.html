@@ -147,11 +147,10 @@
                                    value="example.com">
                         </div>
                         <div class="form-group">
-                            <label for="newClusterLoadBalancerIP">LoadBalancer IP Address (Optional)</label>
+                            <label for="newClusterLoadBalancerIP">LoadBalancer IP Address(es) (Optional)</label>
                             <input type="text" id="newClusterLoadBalancerIP" name="loadBalancerIP"
-                                   placeholder="192.168.100.10"
-                                   pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$"
-                                   title="Must be a valid IPv4 address">
+                                   placeholder="192.168.100.10 or 192.168.100.10,192.168.100.11,192.168.100.12"
+                                   title="Enter single IP or comma-separated IPs for DNS round-robin">
                             <small>Optional - will be auto-resolved via DNS if not provided</small>
                         </div>
                         <div class="form-actions">

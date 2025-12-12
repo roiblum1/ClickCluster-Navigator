@@ -29,6 +29,12 @@ class ClusterProcessorService:
         for cluster in vlan_clusters:
             domain_name = cluster.get("domainName", config.default_domain)
 
+            # Resolve LoadBalancer IP (always returns list or None)
+            load_balancer_ip = ClusterUtils.resolve_loadbalancer_ip(
+                cluster['clusterName'],
+                domain_name
+            )
+
             cluster_entry = {
                 "id": f"vlan-{cluster['clusterName']}@{cluster['site']}",
                 "clusterName": cluster["clusterName"],
@@ -41,10 +47,7 @@ class ClusterProcessorService:
                 ),
                 "createdAt": datetime.utcnow().isoformat(),
                 "source": "vlan-manager",
-                "loadBalancerIP": ClusterUtils.resolve_loadbalancer_ip(
-                    cluster['clusterName'],
-                    domain_name
-                ),
+                "loadBalancerIP": load_balancer_ip,  # Already a list or None
                 "metadata": cluster.get("metadata", {})
             }
 
@@ -83,8 +86,16 @@ class ClusterProcessorService:
             if "source" not in cluster:
                 cluster["source"] = "manual"
 
-            # Resolve LoadBalancer IP if not already present
-            if "loadBalancerIP" not in cluster or cluster["loadBalancerIP"] is None:
+            # Normalize LoadBalancer IP to list format (handle backward compatibility)
+            if "loadBalancerIP" in cluster and cluster["loadBalancerIP"] is not None:
+                # Normalize: convert string to list, keep list as-is
+                if isinstance(cluster["loadBalancerIP"], str):
+                    cluster["loadBalancerIP"] = [cluster["loadBalancerIP"]]
+                elif not isinstance(cluster["loadBalancerIP"], list):
+                    # Invalid type, reset to None so it gets resolved
+                    cluster["loadBalancerIP"] = None
+            else:
+                # Resolve LoadBalancer IP if not already present
                 cluster["loadBalancerIP"] = ClusterUtils.resolve_loadbalancer_ip(
                     cluster["clusterName"],
                     cluster.get("domainName")

@@ -1,49 +1,16 @@
 """
 API routes for exporting cluster data.
 """
-from fastapi import APIRouter, Query, Response
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import Response
 from typing import List, Dict
 import pandas as pd
 import io
 from datetime import datetime
-from src.database import cluster_store
-from src.services import vlan_sync_service
+from src.services.export_service import export_service
 
 
 router = APIRouter(prefix="/api/export", tags=["export"])
-
-
-def prepare_cluster_data() -> List[Dict]:
-    """Prepare all cluster data for export."""
-    # Get VLAN Manager synced data
-    vlan_data = vlan_sync_service.load_from_cache()
-    
-    # Get manual clusters
-    manual_clusters = cluster_store.get_all_clusters()
-    
-    # Combine all clusters
-    all_clusters = []
-    if vlan_data:
-        all_clusters.extend(vlan_data.get("clusters", []))
-    all_clusters.extend(manual_clusters)
-    
-    # Flatten cluster data for export
-    export_data = []
-    for cluster in all_clusters:
-        export_data.append({
-            "Cluster Name": cluster.get("clusterName", ""),
-            "Site": cluster.get("site", ""),
-            "Domain": cluster.get("domainName", ""),
-            "Segments": ", ".join(cluster.get("segments", [])),
-            "Segment Count": len(cluster.get("segments", [])),
-            "Console URL": cluster.get("consoleUrl", ""),
-            "Source": cluster.get("source", "manual"),
-            "Created At": cluster.get("createdAt", ""),
-            "ID": cluster.get("id", "")
-        })
-    
-    return export_data
 
 
 @router.get(
@@ -55,7 +22,7 @@ async def export_csv():
     Export all clusters as CSV file.
     """
     try:
-        data = prepare_cluster_data()
+        data = export_service.prepare_cluster_data()
         df = pd.DataFrame(data)
         
         # Create CSV in memory
@@ -74,7 +41,6 @@ async def export_csv():
             }
         )
     except Exception as e:
-        from fastapi import HTTPException, status
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Export failed: {str(e)}"
@@ -90,7 +56,7 @@ async def export_excel():
     Export all clusters as Excel file (.xlsx).
     """
     try:
-        data = prepare_cluster_data()
+        data = export_service.prepare_cluster_data()
         df = pd.DataFrame(data)
         
         # Create Excel in memory
@@ -120,7 +86,6 @@ async def export_excel():
             }
         )
     except Exception as e:
-        from fastapi import HTTPException, status
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Export failed: {str(e)}"

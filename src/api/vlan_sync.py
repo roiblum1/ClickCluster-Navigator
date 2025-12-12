@@ -1,12 +1,10 @@
 """
 API routes for VLAN Manager sync data.
 """
-import os
-from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
 from typing import Dict
 from src.services import vlan_sync_service
-from src.config import config
+from src.services.vlan_sync_status_service import vlan_sync_status_service
 
 router = APIRouter(prefix="/api/vlan-sync", tags=["vlan-sync"])
 
@@ -62,23 +60,7 @@ async def trigger_sync() -> Dict:
 )
 async def get_sync_status() -> Dict:
     """Get the current status of the VLAN sync service."""
-    cache_exists = vlan_sync_service.cache_file.exists()
-    cache_age = None
-    last_updated = None
-
-    if cache_exists:
-        cache_mtime = os.path.getmtime(vlan_sync_service.cache_file)
-        cache_age = (datetime.now().timestamp() - cache_mtime) / 60  # in minutes
-        last_updated = datetime.fromtimestamp(cache_mtime).isoformat()
-
-    return {
-        "service_running": vlan_sync_service.is_running,
-        "sync_interval_seconds": config.sync_interval,
-        "cache_exists": cache_exists,
-        "cache_age_minutes": round(cache_age, 2) if cache_age else None,
-        "last_updated": last_updated,
-        "vlan_manager_url": config.vlan_manager_url
-    }
+    return vlan_sync_status_service.get_sync_status()
 
 
 @router.get(
@@ -90,18 +72,4 @@ async def get_sites() -> Dict:
     Get the list of available sites from VLAN Manager.
     Returns a list of unique site names.
     """
-    cached_data = vlan_sync_service.load_from_cache()
-
-    if cached_data:
-        # Extract unique site names from the sites list
-        sites = cached_data.get("sites", [])
-        site_names = sorted(list(set(sites)))
-        return {
-            "sites": site_names,
-            "count": len(site_names)
-        }
-    else:
-        return {
-            "sites": [],
-            "count": 0
-        }
+    return vlan_sync_status_service.get_sites()

@@ -55,14 +55,24 @@ class ClusterCRUDService:
         # Use provided LoadBalancer IP or auto-resolve it
         if "loadBalancerIP" in cluster_data and cluster_data["loadBalancerIP"]:
             cluster["loadBalancerIP"] = cluster_data["loadBalancerIP"]
-            logger.info(f"Using provided LoadBalancer IP: {cluster['loadBalancerIP']}")
+            ip_list = cluster["loadBalancerIP"] if isinstance(cluster["loadBalancerIP"], list) else [cluster["loadBalancerIP"]]
+            ip_count = len(ip_list)
+            if ip_count == 1:
+                logger.info(f"Using provided LoadBalancer IP: {ip_list[0]}")
+            else:
+                logger.info(f"Using provided LoadBalancer IPs ({ip_count}): {', '.join(ip_list)}")
         else:
             cluster["loadBalancerIP"] = ClusterUtils.resolve_loadbalancer_ip(
                 cluster["clusterName"],
                 cluster.get("domainName")
             )
             if cluster["loadBalancerIP"]:
-                logger.info(f"Auto-resolved LoadBalancer IP: {cluster['loadBalancerIP']}")
+                ip_list = cluster["loadBalancerIP"] if isinstance(cluster["loadBalancerIP"], list) else [cluster["loadBalancerIP"]]
+                ip_count = len(ip_list)
+                if ip_count == 1:
+                    logger.info(f"Auto-resolved LoadBalancer IP: {ip_list[0]}")
+                else:
+                    logger.info(f"Auto-resolved LoadBalancer IPs ({ip_count}): {', '.join(ip_list)}")
             else:
                 logger.debug(f"LoadBalancer IP could not be resolved for {cluster['clusterName']}")
 

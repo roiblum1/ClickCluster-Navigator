@@ -30,8 +30,11 @@ class ClusterUtils:
         return ClusterValidator.normalize_cluster_name(cluster_name)
 
     @staticmethod
-    def resolve_loadbalancer_ip(cluster_name: str, domain_name: str = None) -> str:
-        """Resolve LoadBalancer IP. Use IPResolverService instead."""
+    def resolve_loadbalancer_ip(cluster_name: str, domain_name: str = None):
+        """
+        Resolve LoadBalancer IP(s). Use IPResolverService instead.
+        Returns List[str] or None. Supports multiple IPs for DNS round-robin.
+        """
         # Lazy import to avoid circular dependency
         from src.services.cluster import IPResolverService
         return IPResolverService.resolve_loadbalancer_ip(cluster_name, domain_name)
