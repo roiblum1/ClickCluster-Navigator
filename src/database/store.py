@@ -93,6 +93,12 @@ class ClusterStore:
             "consoleUrl": console_url,
             "createdAt": datetime.utcnow()
         }
+        
+        # Include optional fields if provided
+        if "loadBalancerIP" in cluster_data:
+            cluster["loadBalancerIP"] = cluster_data["loadBalancerIP"]
+        if "source" in cluster_data:
+            cluster["source"] = cluster_data["source"]
 
         self._clusters[cluster_id] = cluster
         self._sites[site].append(cluster_id)
