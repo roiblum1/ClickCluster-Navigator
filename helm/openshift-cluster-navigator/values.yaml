@@ -42,9 +42,12 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext:
-  runAsNonRoot: true
+  runAsNonRoot: false  # Let OpenShift assign UID (no user in Dockerfile)
   seccompProfile:
     type: RuntimeDefault
+  # fsGroup ensures the pod's group can write to volumes
+  # OpenShift will assign a random UID, fsGroup ensures volume access
+  fsGroup: 0
 
 securityContext:
   allowPrivilegeEscalation: false
@@ -52,8 +55,8 @@ securityContext:
     drop:
     - ALL
   readOnlyRootFilesystem: false
-  runAsNonRoot: true
-  runAsUser: 1000
+  # No runAsNonRoot or runAsUser - let OpenShift handle it
+  # This avoids requiring the 'anyuid' SCC
 
 service:
   type: ClusterIP
@@ -87,23 +90,6 @@ route:
     #   -----BEGIN CERTIFICATE-----
     #   ...
     #   -----END CERTIFICATE-----
-
-# Kubernetes Ingress (alternative to Route)
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # cert-manager.io/cluster-issuer: letsencrypt-prod
-  hosts:
-    - host: cluster-navigator.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-  #  - secretName: cluster-navigator-tls
-  #    hosts:
-  #      - cluster-navigator.example.com
 
 resources:
   limits:
@@ -179,56 +165,3 @@ configMap:
   #       }
   #     }
 
-# Network Policy
-networkPolicy:
-  enabled: false
-  policyTypes:
-    - Ingress
-    - Egress
-  ingress:
-    - from:
-      - podSelector: {}
-      ports:
-      - protocol: TCP
-        port: 8000
-  egress:
-    # Allow DNS
-    - to:
-      - namespaceSelector:
-          matchLabels:
-            name: openshift-dns
-      ports:
-      - protocol: UDP
-        port: 53
-    # Allow VLAN Manager
-    - to:
-      - podSelector:
-          matchLabels:
-            app: vlan-manager
-      ports:
-      - protocol: TCP
-        port: 9000
-    # Allow external HTTPS (for future integrations)
-    - to:
-      - namespaceSelector: {}
-      ports:
-      - protocol: TCP
-        port: 443
-
-# Pod Disruption Budget
-podDisruptionBudget:
-  enabled: true
-  minAvailable: 1
-  # maxUnavailable: 1
-
-# Monitoring with ServiceMonitor (Prometheus Operator)
-monitoring:
-  enabled: false
-  serviceMonitor:
-    enabled: false
-    interval: 30s
-    scrapeTimeout: 10s
-    labels: {}
-    # Example labels for Prometheus Operator
-    # labels:
-    #   prometheus: kube-prometheus

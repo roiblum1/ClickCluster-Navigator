@@ -435,6 +435,72 @@ oc run test-curl --image=curlimages/curl:latest --rm -it --restart=Never -- \
   curl -v http://cluster-navigator:8000/health
 ```
 
+### SCC (Security Context Constraint) Issues
+
+The Helm chart is configured to work with OpenShift's default `restricted-v2` SCC without requiring `anyuid`. 
+
+**If you see SCC errors:**
+
+```bash
+# Check current SCC assignment
+oc describe sa cluster-navigator -n cluster-navigator
+
+# The chart uses fsGroup and dynamic UID assignment
+# No special SCC permissions should be required
+```
+
+**If initContainer fails with permission errors:**
+
+```bash
+# Option 1: Disable initContainer (fsGroup should handle permissions)
+helm upgrade cluster-navigator ./openshift-cluster-navigator \
+  --namespace cluster-navigator \
+  --reuse-values \
+  --set initContainer.enabled=false
+
+# Option 2: Grant specific SCC if needed (not recommended)
+# oc adm policy add-scc-to-user anyuid system:serviceaccount:cluster-navigator:cluster-navigator
+```
+
+**Key changes for SCC compliance:**
+- Removed `runAsUser: 1000` (allows OpenShift to assign random UID)
+- Added `fsGroup: 1000` (ensures volume access by group)
+- Added optional initContainer to fix permissions
+- Dockerfile ensures `/app/data` is group-writable
+
+### Permission Denied on /app/data
+
+**Symptoms:** Application cannot write to `/app/data` directory
+
+**Solutions:**
+
+```bash
+# Check pod security context
+oc get pod -n cluster-navigator -o yaml | grep -A 10 securityContext
+
+# Check volume permissions
+oc exec deployment/cluster-navigator -n cluster-navigator -- ls -lah /app/data
+
+# Verify fsGroup is set
+oc get pod -n cluster-navigator -o jsonpath='{.spec.securityContext.fsGroup}'
+
+# If permissions are wrong, enable initContainer
+helm upgrade cluster-navigator ./openshift-cluster-navigator \
+  --namespace cluster-navigator \
+  --reuse-values \
+  --set initContainer.enabled=true
+
+# Or manually fix permissions (if you have access)
+oc exec deployment/cluster-navigator -n cluster-navigator -- \
+  sh -c "chmod -R 775 /app/data"
+```
+
+**For disconnected environments:**
+- The chart works with default `restricted-v2` SCC
+- No `anyuid` SCC required
+- `fsGroup` handles volume permissions automatically
+- InitContainer is optional and can be disabled if it causes issues
+
 ### Cache Issues
 
 ```bash

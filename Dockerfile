@@ -31,14 +31,9 @@ COPY src/ ./src/
 COPY config.json ./config.json
 
 # Create data directory for cache
-RUN mkdir -p /app/data
-
-# Create a non-root user
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
+RUN mkdir -p /app/data && \
+    # Make data directory writable by any user (OpenShift will assign random UID)
+    chmod -R 777 /app/data
 
 # Expose port
 EXPOSE 8000

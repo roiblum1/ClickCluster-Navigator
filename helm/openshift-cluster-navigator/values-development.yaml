@@ -97,14 +97,3 @@ tolerations: []
 # No special affinity in dev
 affinity: {}
 
-# No network policy in dev for easier debugging
-networkPolicy:
-  enabled: false
-
-# No PDB in dev
-podDisruptionBudget:
-  enabled: false
-
-# No monitoring in dev
-monitoring:
-  enabled: false

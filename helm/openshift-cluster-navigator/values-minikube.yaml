@@ -1,0 +1,99 @@
+# Minikube-specific values for OpenShift Cluster Navigator
+# This file is optimized for local minikube deployment
+
+replicaCount: 1  # Single replica for minikube
+
+image:
+  # Use local image loaded into minikube
+  repository: docker.io/roi12345/openshift-cluster-navigator
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+# Application configuration
+app:
+  title: "OpenShift Cluster Navigator (Minikube)"
+  vlanManagerUrl: "http://vlan-manager:9000"  # Adjust if VLAN Manager is deployed
+  syncInterval: 300
+
+# Authentication configuration
+auth:
+  username: "admin"
+  password: "Password1"
+
+serviceAccount:
+  create: true
+
+podSecurityContext:
+  runAsNonRoot: false
+  seccompProfile:
+    type: RuntimeDefault
+  fsGroup: 0
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+
+# Use NodePort for minikube (or use port-forward)
+service:
+  type: NodePort
+  port: 8000
+  targetPort: 8000
+  annotations: {}
+
+# Disable Route (OpenShift-specific)
+route:
+  enabled: false
+
+# Persistent storage
+persistence:
+  enabled: true
+  storageClass: "standard"  # Minikube default storage class
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  existingClaim: ""
+
+# Resources for minikube
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Health checks
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Disable autoscaling for minikube
+autoscaling:
+  enabled: false
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ConfigMap
+configMap:
+  data: {}
+
