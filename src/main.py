@@ -53,8 +53,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add logging middleware
-app.add_middleware(LoggingMiddleware)
+# Add logging middleware only in DEBUG mode
+if log_level == "DEBUG":
+    app.add_middleware(LoggingMiddleware)
+    logger.info("Detailed request/response logging enabled (DEBUG mode)")
 
 # Configure CORS
 app.add_middleware(
