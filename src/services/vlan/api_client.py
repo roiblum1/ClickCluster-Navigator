@@ -5,7 +5,11 @@ Handles HTTP communication with VLAN Manager API.
 import httpx
 from typing import List, Dict, Optional
 import logging
+import warnings
 from src.config import config
+
+# Suppress SSL warnings when verify=False
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +40,14 @@ class VLANApiClient:
         try:
             vlan_url = config.vlan_manager_url
             full_url = f"{vlan_url}{endpoint}"
-            logger.debug(f"Attempting to fetch from: {full_url}")
 
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
+            # Check if insecure TLS verification is enabled (verify=False)
+            insecure_tls = config.vlan_manager_insecure_tls_verify
+            verify = not insecure_tls  # If insecure_tls=True, then verify=False
+
+            logger.debug(f"Attempting to fetch from: {full_url} (verify={verify})")
+
+            async with httpx.AsyncClient(timeout=self._timeout, verify=verify) as client:
                 response = await client.get(full_url, params=params)
                 response.raise_for_status()
                 logger.debug(f"Successfully fetched from {endpoint}")

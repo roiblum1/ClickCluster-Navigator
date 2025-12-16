@@ -112,6 +112,11 @@ class Config:
         """Get DNS resolution path template from environment or config."""
         return os.getenv("DNS_RESOLUTION_PATH", self._config.get("dns", {}).get("resolution_path", "ingress.{cluster_name}.{domain_name}"))
 
+    @property
+    def vlan_manager_insecure_tls_verify(self) -> bool:
+        """Get VLAN Manager insecure TLS verification setting (verify=False when True)."""
+        return self._config.get("vlan_manager", {}).get("insecure_tls_verify", False)
+
 
 # Global config instance
 config = Config()

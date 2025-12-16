@@ -1,7 +1,8 @@
 {
   "vlan_manager": {
     "url": "http://host.containers.internal:9000",
-    "sync_interval_seconds": 300
+    "sync_interval_seconds": 300,
+    "insecure_tls_verify": false
   },
   "application": {
     "host": "0.0.0.0",
