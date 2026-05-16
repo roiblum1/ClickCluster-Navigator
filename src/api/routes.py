@@ -209,6 +209,11 @@ async def trigger_sync() -> Dict:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Sync failed: {str(e)}")
 
 
+@router.get("/auth/verify", summary="Verify admin credentials")
+async def verify_auth(admin: str = Depends(get_current_admin)) -> Dict:
+    return {"authenticated": True, "username": admin}
+
+
 @router.get("/vlan-sync/status", summary="Get sync service status")
 async def get_sync_status() -> Dict:
     """Get the current status of the VLAN sync service."""

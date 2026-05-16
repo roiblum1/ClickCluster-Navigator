@@ -322,3 +322,9 @@ Built with:
 - Chart.js - Data visualization
 - dnspython - DNS resolution
 - pandas - Data export
+
+---
+
+## Credits
+
+![Credits](credits.jpeg)

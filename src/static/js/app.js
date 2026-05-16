@@ -87,7 +87,7 @@ async function handleLogin(event) {
 
     // Test credentials by making an authenticated request
     try {
-        const response = await fetch(`${API_BASE_URL}/vlan-sync/status`, {
+        const response = await fetch(`${API_BASE_URL}/auth/verify`, {
             headers: {
                 'Authorization': `Basic ${credentials}`
             }
