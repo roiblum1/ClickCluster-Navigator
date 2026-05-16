@@ -1,5 +1,5 @@
 # Multi-stage build for OpenShift Cluster Navigator
-FROM python:3.11-slim as base
+FROM --platform=linux/amd64 python:3.11-slim as base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
