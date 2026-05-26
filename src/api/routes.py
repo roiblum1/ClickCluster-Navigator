@@ -10,7 +10,7 @@ import io
 from datetime import datetime
 
 from src.models import ClusterResponse, ClusterCreate, SiteResponse
-from src.services.cluster import cluster_service, IPResolverService
+from src.services.cluster import cluster_service, IPResolverService, availability_service
 from src.services.export_service import export_service
 from src.services.statistics_service import statistics_service
 from src.services import vlan_sync_service
@@ -207,6 +207,18 @@ async def trigger_sync() -> Dict:
         }
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Sync failed: {str(e)}")
+
+
+@router.get("/clusters/availability", summary="Check availability of all clusters")
+async def get_clusters_availability() -> Dict:
+    """Check each cluster's console URL via HTTP HEAD. Returns {cluster_id: bool}."""
+    sites = cluster_service.get_combined_sites()
+    clusters = [
+        {"id": c.id, "consoleUrl": c.consoleUrl}
+        for site in sites
+        for c in site.clusters
+    ]
+    return await availability_service.check_all(clusters)
 
 
 @router.get("/auth/verify", summary="Verify admin credentials")

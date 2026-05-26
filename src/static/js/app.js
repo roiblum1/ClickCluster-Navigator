@@ -9,6 +9,7 @@ let adminCredentials = null;
 let allSites = [];
 let allClusters = [];
 let currentViewMode = 'grouped';
+let availabilityMap = {};
 
 // Get logger instance
 const logger = window.loggers ? window.loggers.app : console;
@@ -290,8 +291,9 @@ async function loadClusters() {
 
         logger.info(`Total clusters: ${allClusters.length}`);
 
-        // Populate site filter dropdown
+        // Populate filter dropdowns
         populateSiteFilter(sites);
+        populateDomainFilter(allClusters);
 
         // Render clusters
         renderClusters(sites);
@@ -299,10 +301,25 @@ async function loadClusters() {
         // Update statistics
         updateStats(sites);
 
+        // Check availability in background — dots update when done
+        loadAvailability();
+
     } catch (error) {
         logger.error('Failed to load clusters:', error);
         loadingSpinner.classList.add('hidden');
         clustersContainer.innerHTML = `<p class="error-message">Error loading clusters: ${error.message}</p>`;
+    }
+}
+
+// Check cluster availability and re-render dots when done
+async function loadAvailability() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/clusters/availability`);
+        if (!response.ok) return;
+        availabilityMap = await response.json();
+        filterClusters();
+    } catch (e) {
+        // silent — dots stay grey
     }
 }
 
@@ -326,10 +343,27 @@ function populateSiteFilter(sites) {
     siteFilter.value = currentValue;
 }
 
+// Populate the domain filter dropdown
+function populateDomainFilter(clusters) {
+    const domainFilter = document.getElementById('domainFilter');
+    if (!domainFilter) return;
+    const currentValue = domainFilter.value;
+    domainFilter.innerHTML = '<option value="">All Domains</option>';
+    const domains = [...new Set(clusters.map(c => c.domainName).filter(Boolean))].sort();
+    domains.forEach(domain => {
+        const option = document.createElement('option');
+        option.value = domain;
+        option.textContent = domain;
+        domainFilter.appendChild(option);
+    });
+    domainFilter.value = currentValue;
+}
+
 // Filter clusters
 function filterClusters() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const siteFilter = document.getElementById('siteFilter').value;
+    const domainFilter = document.getElementById('domainFilter')?.value || '';
 
     // Shallow copy instead of deep clone for better performance
     let filteredSites = allSites.map(site => ({ ...site, clusters: [...site.clusters] }));
@@ -337,6 +371,14 @@ function filterClusters() {
     // Filter by site
     if (siteFilter) {
         filteredSites = filteredSites.filter(site => site.site === siteFilter);
+    }
+
+    // Filter by domain
+    if (domainFilter) {
+        filteredSites = filteredSites.map(site => {
+            const filteredClusters = site.clusters.filter(c => c.domainName === domainFilter);
+            return { ...site, clusters: filteredClusters, clusterCount: filteredClusters.length };
+        }).filter(site => site.clusterCount > 0);
     }
 
     // Filter by search term
@@ -470,8 +512,13 @@ function createClusterCard(cluster) {
         }
     }
 
+    const avail = availabilityMap[cluster.id];
+    const dotClass = avail === undefined ? 'grey' : avail ? 'green' : 'red';
+    const dotTitle = avail === undefined ? 'Checking availability...' : avail ? 'Available' : 'Unavailable';
+
     card.innerHTML = `
         <div class="cluster-header">
+            <span class="availability-dot ${dotClass}" title="${dotTitle}"></span>
             <h4>${cluster.clusterName}</h4>
             ${sourceIndicator}
         </div>

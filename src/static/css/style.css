@@ -1715,3 +1715,16 @@ body.dark-mode .header-logo:hover {
 .dark-mode .create-cluster-form:hover {
     border-color: var(--primary-color);
 }
+
+/* Availability indicator dot */
+.availability-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    margin-right: 6px;
+}
+.availability-dot.green { background: #22c55e; box-shadow: 0 0 4px rgba(34,197,94,0.5); }
+.availability-dot.red   { background: #ef4444; box-shadow: 0 0 4px rgba(239,68,68,0.5); }
+.availability-dot.grey  { background: #9ca3af; }

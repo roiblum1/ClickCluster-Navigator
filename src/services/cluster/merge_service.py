@@ -66,11 +66,41 @@ class ClusterMergeService:
                 sites_dict[site_name]["clusterCount"] += 1
                 logger.debug(f"Added VLAN cluster '{cluster['clusterName']}' to site '{site_name}'")
 
-        # Add manual clusters (skip duplicates from VLAN Manager)
+        # Build a lookup map of processed VLAN clusters so supplements can mutate their segments
+        vlan_cluster_map = {}
+        for site_data in sites_dict.values():
+            for cluster in site_data["clusters"]:
+                key = (cluster["clusterName"], cluster["site"])
+                vlan_cluster_map[key] = cluster
+
         vlan_cluster_keys = self._get_vlan_cluster_keys(vlan_data)
         logger.debug(f"VLAN cluster keys for deduplication: {vlan_cluster_keys}")
+
+        # Separate manual clusters: those that supplement a VLAN cluster vs standalone
+        supplement_manuals = []
+        standalone_manuals = []
+        for mc in manual_clusters:
+            key = (mc["clusterName"], mc["site"])
+            if key in vlan_cluster_keys:
+                supplement_manuals.append(mc)
+            else:
+                standalone_manuals.append(mc)
+
+        # Merge segments from supplement entries into their matching VLAN cluster
+        for mc in supplement_manuals:
+            key = (mc["clusterName"], mc["site"])
+            target = vlan_cluster_map.get(key)
+            if target and mc.get("segments"):
+                existing = set(target["segments"])
+                new_segs = [s for s in mc["segments"] if s not in existing]
+                if new_segs:
+                    target["segments"] = target["segments"] + new_segs
+                    logger.debug(
+                        f"Supplemented VLAN cluster {key} with segments: {new_segs}"
+                    )
+
         manual_clusters_processed = self.processor.process_manual_clusters(
-            manual_clusters,
+            standalone_manuals,
             vlan_cluster_keys
         )
         logger.debug(f"Processed {len(manual_clusters_processed)} manual clusters (after deduplication)")

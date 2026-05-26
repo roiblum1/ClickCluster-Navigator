@@ -6,6 +6,7 @@ from src.services.cluster.url_generator_service import URLGeneratorService
 from src.services.cluster.crud_service import ClusterCRUDService
 from src.services.cluster.merge_service import ClusterMergeService
 from src.services.cluster.processor_service import ClusterProcessorService
+from src.services.cluster.availability_service import availability_service
 
 
 class ClusterService:
@@ -57,4 +58,5 @@ __all__ = [
     "ClusterProcessorService",
     "ClusterService",
     "cluster_service",
+    "availability_service",
 ]
