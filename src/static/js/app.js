@@ -518,8 +518,10 @@ function createClusterCard(cluster) {
 
     card.innerHTML = `
         <div class="cluster-header">
-            <span class="availability-dot ${dotClass}" title="${dotTitle}"></span>
-            <h4>${cluster.clusterName}</h4>
+            <div class="cluster-header-name">
+                <span class="availability-dot ${dotClass}" title="${dotTitle}"></span>
+                <h4>${cluster.clusterName}</h4>
+            </div>
             ${sourceIndicator}
         </div>
         <div class="cluster-info">

@@ -652,6 +652,13 @@ header .subtitle {
     gap: 12px;
 }
 
+.cluster-header-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
 .cluster-header h4 {
     font-size: 1.3em;
     font-weight: 600;
