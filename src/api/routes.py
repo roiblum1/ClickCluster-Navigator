@@ -38,6 +38,18 @@ async def get_all_clusters() -> List[ClusterResponse]:
     return [ClusterResponse(**cluster) for cluster in clusters]
 
 
+@router.get("/clusters/availability", summary="Check availability of all clusters")
+async def get_clusters_availability() -> Dict:
+    """Check each cluster's console URL via HTTP HEAD. Returns {cluster_id: bool}."""
+    sites = cluster_service.get_combined_sites()
+    clusters = [
+        {"id": c.id, "consoleUrl": c.consoleUrl}
+        for site in sites
+        for c in site.clusters
+    ]
+    return await availability_service.check_all(clusters)
+
+
 @router.get("/clusters/{cluster_id}", response_model=ClusterResponse, summary="Get a specific cluster by ID")
 async def get_cluster(cluster_id: str) -> ClusterResponse:
     """Get details of a specific cluster by its ID."""
@@ -207,18 +219,6 @@ async def trigger_sync() -> Dict:
         }
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Sync failed: {str(e)}")
-
-
-@router.get("/clusters/availability", summary="Check availability of all clusters")
-async def get_clusters_availability() -> Dict:
-    """Check each cluster's console URL via HTTP HEAD. Returns {cluster_id: bool}."""
-    sites = cluster_service.get_combined_sites()
-    clusters = [
-        {"id": c.id, "consoleUrl": c.consoleUrl}
-        for site in sites
-        for c in site.clusters
-    ]
-    return await availability_service.check_all(clusters)
 
 
 @router.get("/auth/verify", summary="Verify admin credentials")
